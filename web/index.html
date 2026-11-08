@@ -167,7 +167,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
       <span style="flex:1"></span>
       <button id="dlCsv" disabled title="Species lists for every unit and stage">Download species CSV</button>
       <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON">Units GeoJSON</button>
-      <button id="dlCheck" disabled title="Expected and likely species as a printable field checklist (save as PDF from the print dialog)">Plant checklist</button>
+      <button id="dlCheck" disabled title="Expected and likely species as a Word field checklist">Plant checklist (Word)</button>
     </div>
     <div id="polyList"></div>
     <div id="status" class="hint">Draw an area with the polygon or rectangle tool on the map, or load a file.</div>
@@ -491,12 +491,13 @@ $("#dlCsv").onclick = () => {
   save("﻿" + [cols.join(",")].concat(rowsOut.map(s => cols.map(c => cell(s[c])).join(","))).join("\n"),
        `rightree_${current.id}_species.csv`, "text/csv");
 };
-// Field checklist: every species rated Expected or Likely (plus Possible if
-// "Show possible" is ticked) in any unit and stage with enough evidence, once
-// each, grouped by its main layer. Opens print-ready in a new tab.
+// Field checklist (Word): every species rated Expected or Likely (plus
+// Possible if "Show possible" is ticked) in any unit and stage with enough
+// evidence, once each, grouped by its main layer. The docx library loads only
+// when the button is first used.
 const LK_RANK = {Expected: 0, Likely: 1, Possible: 2};
 const STAGE_CODE = {"Mature forest": "M", "Regenerating": "R", "Open ground": "O", "Wetland": "W"};
-function checklistHtml(j) {
+function checklistData(j) {
   const sp = new Map();
   for (const r of j.species) {
     const s = stageOf(r, j);
@@ -508,66 +509,112 @@ function checklistHtml(j) {
     e.stages.add(STAGE_CODE[STAGE_SHORT[r.stage]] || "?"); e.units.add(r.unit);
     sp.set(r.species, e);
   }
-  const groups = LAYERS.map(([k, , nm]) => [k, nm === "Climber or epiphyte" ? "Climbers and epiphytes" : nm, []]).concat([["", "Other", []]]);
+  const groups = LAYERS.map(([k, , nm]) => ({k, name: nm === "Climber or epiphyte" ? "Climbers and epiphytes" : nm, list: []}))
+    .concat([{k: "", name: "Other", list: []}]);
   for (const e of sp.values()) {
     const ls = layersOf(e.r);
-    (groups.find(g => g[0] && ls.has(g[0])) || groups[groups.length - 1])[2].push(e);
+    (groups.find(g => g.k && ls.has(g.k)) || groups[groups.length - 1]).list.push(e);
   }
+  for (const g of groups)
+    g.list.sort((a, b) => LK_RANK[a.lk] - LK_RANK[b.lk] || (a.r.common_name || a.r.species).localeCompare(b.r.common_name || b.r.species));
+  return {groups: groups.filter(g => g.list.length), n: sp.size};
+}
+let docxLib = null;
+const loadDocx = () => docxLib || (docxLib = new Promise((resolve, reject) => {
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/docx@9.5.1/dist/index.iife.js";
+  s.onload = () => resolve(window.docx);
+  s.onerror = () => { docxLib = null; reject(new Error("Couldn't load the Word library.")); };
+  document.head.appendChild(s);
+}));
+async function checklistDocx(j) {
+  const D = await loadDocx();
+  const {Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle,
+         AlignmentType, PageNumber, Footer, LevelFormat} = D;
+  const {groups, n} = checklistData(j);
   const multi = j.units.length > 1, order = ["M", "R", "O", "W"];
-  const site = esc(document.querySelector("#name").value.trim() || j.site || "Site");
+  const site = document.querySelector("#name").value.trim() || j.site || "Site";
   const ha = j.units.reduce((a, u) => a + u.ha, 0);
   const today = new Date().toLocaleDateString("en-NZ", {day: "numeric", month: "long", year: "numeric"});
-  let rows = "";
-  for (const [, nm, list] of groups) {
-    if (!list.length) continue;
-    list.sort((a, b) => LK_RANK[a.lk] - LK_RANK[b.lk] || (a.r.common_name || a.r.species).localeCompare(b.r.common_name || b.r.species));
-    rows += `<tr class="grp"><th colspan="${multi ? 7 : 6}">${nm} <span>(${list.length})</span></th></tr>`;
-    for (const e of list) {
+  const FONT = "Arial", SLATE = "263B27", GREY = "5F6B66";
+  const run = (text, o = {}) => new TextRun({text, font: FONT, size: o.size || 18, bold: o.bold, italics: o.italics, color: o.color});
+  const para = (runs, o = {}) => new Paragraph({children: Array.isArray(runs) ? runs : [runs], spacing: {before: 0, after: o.after ?? 60}, ...(o.p || {})});
+  // A4 with 15 mm margins: 11906 - 2 * 850 = 10206 twips of text width
+  const W = 10206;
+  const cols = multi ? [420, 3200, 1050, 750, 900, 1400, 2486] : [420, 3500, 1100, 800, 1500, 2886];
+  const heads = multi ? ["", "Species", "Likelihood", "Stage", "Unit", "Threat status", "Notes"]
+                      : ["", "Species", "Likelihood", "Stage", "Threat status", "Notes"];
+  const none = {style: BorderStyle.NONE, size: 0, color: "FFFFFF"};
+  const borders = {top: none, left: none, right: none, bottom: {style: BorderStyle.SINGLE, size: 4, color: "BBBBBB"}};
+  const margins = {top: 50, bottom: 50, left: 80, right: 80};
+  const cell = (children, w, o = {}) => new TableCell({children, width: {size: w, type: WidthType.DXA}, borders, margins, ...o});
+  const rows = [new TableRow({tableHeader: true, children: heads.map((h, i) => cell([para(run(h, {bold: true, size: 16}), {after: 0})], cols[i],
+    {borders: {...borders, bottom: {style: BorderStyle.SINGLE, size: 12, color: SLATE}}}))})];
+  for (const g of groups) {
+    rows.push(new TableRow({cantSplit: true, children: [cell(
+      [para([run(g.name + " ", {bold: true, color: "FFFFFF"}), run("(" + g.list.length + ")", {color: "FFFFFF"})], {after: 0})],
+      W, {columnSpan: cols.length, shading: {type: ShadingType.CLEAR, color: "auto", fill: SLATE}})]}));
+    for (const e of g.list) {
       const r = e.r;
-      rows += `<tr><td class="box">☐</td><td><b>${esc(r.common_name || "")}</b>${r.common_name ? "<br>" : ""}<i>${esc(r.species)}</i></td>
-        <td>${e.lk}</td><td>${order.filter(c => e.stages.has(c)).join(" ")}</td>${multi ? `<td>${[...e.units].sort().join(", ")}</td>` : ""}
-        <td>${THREAT(r.category) ? esc(r.category) : ""}</td><td class="notes"></td></tr>`;
+      const name = r.common_name ? [para(run(r.common_name, {bold: true}), {after: 0}), para(run(r.species, {italics: true}), {after: 0})]
+                                 : [para(run(r.species, {italics: true}), {after: 0})];
+      const vals = [[para(run("☐", {size: 24}), {after: 0})], name, [para(run(e.lk), {after: 0})],
+        [para(run(order.filter(c => e.stages.has(c)).join(" ")), {after: 0})]];
+      if (multi) vals.push([para(run([...e.units].sort().join(", ")), {after: 0})]);
+      vals.push([para(run(THREAT(r.category) ? r.category : ""), {after: 0})], [para(run(""), {after: 0})]);
+      rows.push(new TableRow({cantSplit: true, children: vals.map((v, i) => cell(v, cols[i]))}));
     }
   }
-  const units = j.units.map(u => `<li>${multi ? `Unit ${u.unit}: ` : ""}${u.ha.toLocaleString()} ha, ${u.temp} °C mean, ${u.rain.toLocaleString()} mm rain, ` +
-    `slope ${u.slope}°. Now: ${Object.entries(u.covers).map(([k, v]) => `${esc(k)} ${Math.round(v * 100)}%`).join(", ")}.` +
-    `${(u.potential || []).length ? ` Naturally: ${u.potential.map(p => `${esc(p.name)} ${Math.round(p.share * 100)}%`).join(", ")}.` : ""}</li>`).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Plant checklist: ${site}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  body { font: 12px/1.35 "Inter Tight", Arial, sans-serif; color: #000; background: #fff; margin: 16px; }
-  h1 { font-size: 20px; margin: 0 0 2px; color: #263b27; } .sub { color: #5F6B66; margin-bottom: 8px; }
-  .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 16px; margin: 8px 0; }
-  .meta div { border-bottom: 1px solid #999; padding: 10px 0 2px; color: #5F6B66; }
-  ul { margin: 6px 0 10px; padding-left: 18px; } .key { color: #5F6B66; margin: 6px 0 10px; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; vertical-align: top; padding: 4px 6px; border-bottom: 1px solid #ccc; }
-  thead th { border-bottom: 2px solid #263b27; font-size: 11px; }
-  tr.grp th { background: #263b27; color: #fff; padding: 5px 6px; } tr.grp span { font-weight: 400; }
-  td.box { font-size: 16px; width: 18px; } td.notes { width: 30%; }
-  tr { break-inside: avoid; } .foot { color: #5F6B66; margin-top: 12px; font-size: 11px; }
-  .bar { margin-bottom: 12px; } .bar button { font: inherit; padding: 6px 12px; border: 1px solid #263b27; background: #263b27; color: #fff; cursor: pointer; }
-  @media print { .bar { display: none; } body { margin: 0; } @page { size: A4; margin: 12mm; } thead { display: table-header-group; } }
-</style></head><body>
-<div class="bar"><button onclick="print()">Print or save as PDF</button></div>
-<h1>Plant checklist: ${site}</h1>
-<div class="sub">Rightree ${esc(document.querySelector("#ver").textContent)} · made ${today} · ${ha.toLocaleString()} ha · ${sp.size} species</div>
-<div class="meta"><div>Surveyor</div><div>Date</div><div>Weather</div></div>
-<ul>${units}</ul>
-<div class="key">Native species expected at the site, from where they grow in environmentally similar places nearby.
-<b>Expected</b>: in 40%+ of similar survey plots. <b>Likely</b>: in 15%+ of plots, or 3+ records.${showPossible ? " <b>Possible</b>: a single plot or one or two records." : ""}
-Stage: M mature forest, R regenerating, O open ground, W wetland.</div>
-<table><thead><tr><th></th><th>Species</th><th>Likelihood</th><th>Stage</th>${multi ? "<th>Unit</th>" : ""}<th>Threat status</th><th>Notes</th></tr></thead>
-<tbody>${rows}</tbody></table>
-<div class="foot">A starting list to check on the ground, not a survey. Species records: GBIF.org (NVS, iNaturalist NZ, NZ herbaria);
-environment: NZEnvDS v1.1; land cover: LCDB v6; wetlands: GDC 2022; potential ecosystems: Eco-index Ecosystem Projector (CC BY 4.0);
-names and threat status: NZTCS. Rightree by Rutherford Ecology.</div>
-</body></html>`;
+  const unitText = u => (multi ? "Unit " + u.unit + ": " : "") + u.ha.toLocaleString() + " ha, " + u.temp + " °C mean, " +
+    u.rain.toLocaleString() + " mm rain, slope " + u.slope + "°. Now: " +
+    Object.entries(u.covers).map(([k, v]) => k + " " + Math.round(v * 100) + "%").join(", ") + "." +
+    ((u.potential || []).length ? " Naturally: " + u.potential.map(p => p.name + " " + Math.round(p.share * 100) + "%").join(", ") + "." : "");
+  const unitLines = j.units.map(u => para(run(unitText(u)), {p: {numbering: {reference: "units", level: 0}}}));
+  const blankCell = t => new TableCell({width: {size: 3402, type: WidthType.DXA}, margins: {top: 200, bottom: 40, left: 0, right: 200},
+    borders: {top: none, left: none, right: none, bottom: {style: BorderStyle.SINGLE, size: 4, color: "999999"}},
+    children: [para(run(t, {color: GREY}), {after: 0})]});
+  const blanks = new Table({width: {size: W, type: WidthType.DXA}, columnWidths: [3402, 3402, 3402],
+    rows: [new TableRow({children: ["Surveyor", "Date", "Weather"].map(blankCell)})]});
+  const key = [run("Native species expected at the site, from where they grow in environmentally similar places nearby. ", {color: GREY}),
+    run("Expected", {bold: true, color: GREY}), run(": in 40%+ of similar survey plots. ", {color: GREY}),
+    run("Likely", {bold: true, color: GREY}), run(": in 15%+ of plots, or 3+ records. ", {color: GREY})];
+  if (showPossible) key.push(run("Possible", {bold: true, color: GREY}), run(": a single plot or one or two records. ", {color: GREY}));
+  key.push(run("Stage: M mature forest, R regenerating, O open ground, W wetland.", {color: GREY}));
+  const doc = new Document({
+    creator: "Rightree", title: "Plant checklist: " + site,
+    styles: {default: {document: {run: {font: FONT, size: 18}}}},
+    numbering: {config: [{reference: "units", levels: [{level: 0, format: LevelFormat.BULLET, text: "•", alignment: AlignmentType.LEFT,
+      style: {paragraph: {indent: {left: 360, hanging: 240}}}}]}]},
+    sections: [{
+      properties: {page: {size: {width: 11906, height: 16838}, margin: {top: 850, bottom: 850, left: 850, right: 850}}},
+      footers: {default: new Footer({children: [new Paragraph({alignment: AlignmentType.RIGHT, children: [
+        run("Rightree plant checklist: " + site + " · page ", {size: 14, color: GREY}),
+        new TextRun({children: [PageNumber.CURRENT], font: FONT, size: 14, color: GREY})]})]})},
+      children: [
+        para(run("Plant checklist: " + site, {bold: true, size: 32, color: SLATE}), {after: 40}),
+        para(run("Rightree " + document.querySelector("#ver").textContent + " · made " + today + " · " + ha.toLocaleString() +
+                 " ha · " + n + " species", {color: GREY}), {after: 120}),
+        blanks,
+        para(run(""), {after: 60}),
+        ...unitLines,
+        para(key, {after: 160}),
+        new Table({width: {size: W, type: WidthType.DXA}, columnWidths: cols, rows}),
+        para(run("A starting list to check on the ground, not a survey. Species records: GBIF.org (NVS, iNaturalist NZ, NZ herbaria); " +
+          "environment: NZEnvDS v1.1; land cover: LCDB v6; wetlands: GDC 2022; potential ecosystems: Eco-index Ecosystem Projector " +
+          "(CC BY 4.0); names and threat status: NZTCS. Rightree by Rutherford Ecology.", {size: 15, color: GREY}), {p: {spacing: {before: 200, after: 0}}}),
+      ],
+    }],
+  });
+  return Packer.toBlob(doc);
 }
-$("#dlCheck").onclick = () => {
-  const html = checklistHtml(current);
-  const w = window.open(URL.createObjectURL(new Blob([html], {type: "text/html"})), "_blank");
-  if (!w) save(html, `rightree_${current.id}_checklist.html`, "text/html");   // pop-up blocked: download it instead
+$("#dlCheck").onclick = async () => {
+  const b = $("#dlCheck"); b.disabled = true;
+  try {
+    const blob = await checklistDocx(current);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "rightree_" + current.id + "_checklist.docx"; a.click();
+  } catch (err) { setStatus(err.message || String(err), true); }
+  finally { b.disabled = false; }
 };
 $("#dlGeo").onclick = () => {
   const fc = JSON.parse(JSON.stringify(current.units_geojson));

@@ -49,7 +49,7 @@ Builds the site into `site/` and serves it at http://127.0.0.1:7882. Draw the
 site (same tools as Occurd), or load a KML exported from Occurd, and press
 Predict. Distinct habitats are mapped as units, each with its model inputs
 and what sets it apart. Lists show by unit and stage, with species linked to
-LookLike. Download the species CSV, the units as GeoJSON, or a printable
+LookLike. Download the species CSV, the units as GeoJSON, or a Word
 plant checklist for the field.
 
 The model runs in the browser (Pyodide, in a Web Worker), so the site is
