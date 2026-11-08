@@ -41,6 +41,11 @@ button:hover, .btn:hover { background: var(--hover); }
 button.primary { background: #263b27; color: #fff; border-color: #263b27; font-weight: 600; }
 button:disabled { opacity: .4; cursor: default; }
 .hint { color: var(--grey); font-size: 12.5px; }
+.evidence-ctl { background: var(--bg); color: var(--ink); border: 1px solid var(--rule); padding: 6px 9px; font-size: 12px; line-height: 1.5; box-shadow: 0 1px 4px rgba(0,0,0,.2); display: none; }
+.evidence-ctl label { cursor: pointer; }
+.evidence-ctl a { color: var(--slate); font-size: 11.5px; }
+.evidence-ctl i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #999; margin-right: 6px; vertical-align: -1px; }
+.evidence-ctl i.sm { width: 8px; height: 8px; border-width: 1px; margin: 0 8px 0 2px; }
 /* Upload area: a dashed drop zone; Predict below it */
 .dropzone { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; white-space: normal;
   padding: 12px 14px; border: 1.5px dashed var(--slate); background: var(--bg); font-weight: 400; }
@@ -368,7 +373,7 @@ for (const [id, fn] of [["finishDrawBtn", onFinish], ["undoPointBtn", onUndo], [
 
 // A new area is dashed and editable (drag corners), then solid once used.
 map.on(L.Draw.Event.CREATED, e => {
-  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers(); pendingFile = null;
+  drawn.clearLayers(); resultLayer.clearLayers(); drawPlots(null); pendingFile = null;
   editing = e.layer;
   editing.setStyle({color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.08, weight: 2, dashArray: "7,5"});
   drawn.addLayer(editing);
@@ -413,7 +418,7 @@ function renderPolyList() {
 function deleteArea() {
   if (editing && editing.editing) editing.editing.disable();
   editing = null; pendingFile = null; current = null;
-  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
+  drawn.clearLayers(); resultLayer.clearLayers(); drawPlots(null);
   document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true; document.querySelector("#dlCheck").disabled = true;
   document.querySelector("#downloads").classList.add("off"); document.querySelector("#dlHint").textContent = "Available after Predict.";
   document.querySelector("#results").innerHTML = EMPTY_RESULTS;
@@ -436,7 +441,7 @@ async function loadFile(f) {
   const buf = new Uint8Array(await f.arrayBuffer());
   let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
   pendingFile = {name: f.name, b64: btoa(bin)}; editing = null;
-  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
+  drawn.clearLayers(); resultLayer.clearLayers(); drawPlots(null);
   const style = {color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.1, weight: 2};
   try {
     let gj = null;
@@ -711,7 +716,7 @@ function attrsTable(u, units, groups, wvar) {
 function show(j) {
   current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false; $("#dlCheck").disabled = false;
   $("#downloads").classList.remove("off"); $("#dlHint").textContent = "For this prediction.";
-  resultLayer.clearLayers(); plotLayer.clearLayers();
+  resultLayer.clearLayers(); drawPlots(null);
   const multi = j.units.length > 1;
   // Units are drawn over the site; the site outline stays on top for reference.
   const ug = L.geoJSON(j.units_geojson, {style: f => multi
@@ -769,12 +774,12 @@ function show(j) {
   $("#showPossible").onchange = e => { showPossible = e.target.checked; rerenders.forEach(f => f()); };
   document.querySelectorAll(".unit").forEach(sec => {
     const unit = +sec.dataset.unit, stages = j.stages.filter(s => s.unit === unit);
-    const render = i => { sec.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", +t.dataset.i === i));
-      sec.querySelector(".stage").innerHTML = stageHtml(stages[i], j); drawPlots(stages[i]); bindStage(sec, stages[i], j); };
-    sec.querySelectorAll(".tab").forEach(t => t.onclick = () => render(+t.dataset.i));
-    rerenders.push(() => render(+(sec.querySelector(".tab.on")?.dataset.i ?? 0)));
+    const render = (i, draw) => { sec.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", +t.dataset.i === i));
+      sec.querySelector(".stage").innerHTML = stageHtml(stages[i], j); if (draw) drawPlots(stages[i]); bindStage(sec, stages[i], j); };
+    sec.querySelectorAll(".tab").forEach(t => t.onclick = () => render(+t.dataset.i, true));
+    rerenders.push(() => render(+(sec.querySelector(".tab.on")?.dataset.i ?? 0), false));
     sec.querySelector(".unit-head").onclick = () => { const b = L.latLngBounds([]); ug.eachLayer(l => { if (l.feature.properties.unit === unit) b.extend(l.getBounds()); }); if (b.isValid()) map.fitBounds(b, {maxZoom: 16}); };
-    render(firstGood(stages));
+    render(firstGood(stages), unit === j.units[0].unit);
   });
 }
 function firstGood(stages) { const i = stages.findIndex(s => s.enough && s.tier === "close"); return i >= 0 ? i : Math.max(0, stages.findIndex(s => s.enough)); }
@@ -800,10 +805,10 @@ function stageHtml(s, j, all) {
   let h = `<div>${s.enough ? `<span class="badge ${s.tier === "close" ? "close" : "best"}">${s.tier === "close" ? "Close matches" : "Best available"}</span>` : ""}
     <span class="hint"> ${esc(STAGE_HELP[name] || "")}</span></div>`;
   const near = s.nearest == null ? (s.stage === "Wetland" ? "" : "no plots pass the climate/coast check") : `nearest plot ${s.nearest.toFixed(2)}`;
-  h += `<div class="evidence">Evidence: ${s.n_plots} plots and ${s.n_obs} records within ${s.limit}${near ? ` (${near})` : ""}.</div>`;
+  h += `<div class="evidence">Evidence: ${s.n_plots} plots and ${s.n_obs} records within ${s.limit}${near ? ` (${near})` : ""}.${(s.plots_used || []).length || (s.obs_used || []).length ? " Plots (orange) and records (blue) are on the map; click one to open it on GBIF." : ""}</div>`;
   if (!s.enough) return h + `<div class="note">Not enough similar sites for a list, even allowing weaker matches.</div>`;
   if (s.tier !== "close") h += `<div class="note">No close matches. These are the nearest sites that still have a similar climate and distance to the coast.
-    Treat as a lead to check, not a prediction.${s.plots_used.length ? " The plots used are the orange dots on the map." : ""}</div>`;
+    Treat as a lead to check, not a prediction.</div>`;
   if (s.obs_only && s.stage !== "Wetland") h += `<div class="note plain">Too few survey plots, so this list is from records only. It shows what people have recorded, not what is absent.</div>`;
   const allRows = j.species.filter(r => r.unit === s.unit && r.stage === s.stage);
   const usePlots = allRows.some(r => r.plot_freq > 0);
@@ -833,11 +838,48 @@ function stageHtml(s, j, all) {
 }
 function bindStage(sec, s, j) { const b = sec.querySelector(".more"); if (b) b.onclick = () => { sec.querySelector(".stage").innerHTML = stageHtml(s, j, true); bindStage(sec, s, j); }; }
 
+// Evidence on the map: the NVS plots (orange) and other GBIF records (blue)
+// behind the stage being viewed, at GBIF's published coordinates. Each opens
+// its GBIF record. A tickbox in the map corner hides them.
+const PLOT_COLOUR = "#FF8C00", REC_COLOUR = "#2c5f8a";
+let showEvidence = true, evidenceStage = null;
+try { showEvidence = localStorage.getItem("rightree-evidence") !== "0"; } catch (e) {}
+const gbifLink = id => id ? `<br><a href="https://www.gbif.org/occurrence/${id}" target="_blank" rel="noopener">View on GBIF</a>` : "";
+const evidenceCtl = L.control({position: "bottomleft"});
+evidenceCtl.onAdd = () => {
+  const d = L.DomUtil.create("div", "evidence-ctl");
+  L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
+  return d;
+};
+evidenceCtl.addTo(map);
 function drawPlots(s) {
-  plotLayer.clearLayers();
-  for (const p of s.plots_used || [])
-    L.circleMarker([p.lat, p.lon], {radius: 6, color: "#fff", weight: 2, fillColor: "#FF8C00", fillOpacity: 1})
-      .bindTooltip(`NVS plot ${p.year ?? ""} · distance ${p.d.toFixed(2)}`).addTo(plotLayer);
+  plotLayer.clearLayers(); evidenceStage = s;
+  const box = document.querySelector(".evidence-ctl");
+  const plots = (s && s.plots_used) || [], recs = (s && s.obs_used) || [];
+  if (!plots.length && !recs.length) { box.style.display = "none"; return; }
+  box.style.display = "block";
+  box.innerHTML = `<label><input type="checkbox" ${showEvidence ? "checked" : ""}> <b>Evidence on map</b></label>
+    <div class="hint">${current && current.units.length > 1 ? "Unit " + s.unit + " · " : ""}${esc(STAGE_SHORT[s.stage] || s.stage)}</div>
+    ${plots.length ? `<div><i style="background:${PLOT_COLOUR}"></i>${plots.length} NVS plot${plots.length > 1 ? "s" : ""}</div>` : ""}
+    ${recs.length ? `<div><i class="sm" style="background:${REC_COLOUR}"></i>${recs.length} record${recs.length > 1 ? "s" : ""}</div>` : ""}
+    <a href="#" class="zoom-ev">Zoom to these</a>`;
+  box.querySelector(".zoom-ev").onclick = e => { e.preventDefault();
+    const b = L.latLngBounds(plots.concat(recs).map(p => [p.lat, p.lon])); drawn.eachLayer(l => l.getBounds && b.extend(l.getBounds()));
+    if (b.isValid()) map.fitBounds(b, {padding: [30, 30], maxZoom: 15}); };
+  box.querySelector("input").onchange = e => {
+    showEvidence = e.target.checked;
+    try { localStorage.setItem("rightree-evidence", showEvidence ? "1" : "0"); } catch (err) {}
+    drawPlots(evidenceStage);
+  };
+  if (!showEvidence) return;
+  for (const r of recs)
+    L.circleMarker([r.lat, r.lon], {radius: 4, color: "#fff", weight: 1, fillColor: REC_COLOUR, fillOpacity: .9})
+      .bindPopup(`<i>${esc(r.name)}</i><br>${esc(r.source || "Record")}${r.year ? " " + r.year : ""} · distance ${r.d.toFixed(2)}${gbifLink(r.gbif)}`)
+      .addTo(plotLayer);
+  for (const p of plots)
+    L.circleMarker([p.lat, p.lon], {radius: 6, color: "#fff", weight: 2, fillColor: PLOT_COLOUR, fillOpacity: 1})
+      .bindPopup(`<b>NVS plot</b>${p.year ? " " + p.year : ""}<br>${p.n} species · distance ${p.d.toFixed(2)}${gbifLink(p.gbif)}`)
+      .addTo(plotLayer);
 }
 
 (async () => {

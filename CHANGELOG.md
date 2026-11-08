@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.20.0 (November 2026)
+
+- **Evidence on the map.** For the unit and stage being viewed, the map shows
+  the NVS plots (orange, up to 20) and other GBIF records (blue, up to 100)
+  that its list came from, at GBIF's published coordinates. Clicking one
+  shows its year, species or species count and similarity distance, with a
+  link to the GBIF record. A box in the map corner turns them off (remembered
+  in this browser) and zooms to them.
+- `report.json` stages carry `plots_used` (every plot used, not just five
+  for best-available lists) and `obs_used`, each with a GBIF occurrence ID.
+
 ## v0.19.2 (November 2026)
 
 - "by Rutherford Ecology" after the title and version in the header.

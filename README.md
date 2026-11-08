@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.19.2). Two regions: Tairāwhiti (Gisborne) and Te Matau-a-Māui
+Status: prototype (v0.20.0). Two regions: Tairāwhiti (Gisborne) and Te Matau-a-Māui
 (Hawke's Bay); visitors pick one when they start. Native records are tagged with
 environment, land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
@@ -55,7 +55,8 @@ python scripts/serve.py
 Builds the site into `site/` and serves it at http://127.0.0.1:7882. Draw the
 site (same tools as Occurd), or load a KML exported from Occurd, and press
 Predict. Distinct habitats are mapped as units, each with its model inputs
-and what sets it apart. Lists show by unit and stage, with species linked to
+and what sets it apart. Lists show by unit and stage, with the plots and
+records behind each list on the map, with species linked to
 LookLike. Download the species CSV, the units as GeoJSON, or a Word
 plant checklist for the field.
 
