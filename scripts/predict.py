@@ -367,6 +367,7 @@ def main():
         print(f"No growth form for {len(no_form)} names: {', '.join(no_form[:10])}")
     nat_wl = rec["gdc_wl_status"].isin(NATURAL_WETLAND)
 
+    units_meta, stages_meta = [], []
     rows_out, report = [], [f"# Rightree prediction: {site}", "",
                             f"Region data: {region}. Natives only. Plots: NVS via GBIF; "
                             f"observations: iNaturalist and herbaria. {n_on_site} records in or within "
@@ -382,6 +383,11 @@ def main():
                    f"slope {e['slope_deg']:.0f}°, {np.expm1(e['distance_coast']) / 1000:.1f} km from coast",
                    "- Land cover now: " + ", ".join(f"{k} {v / m.sum():.0%}" for k, v in covers.head(4).items()),
                    f"- Natural wetland in unit: {'yes' if has_wl else 'no'}", ""]
+        units_meta.append({"unit": u + 1, "ha": int(m.sum()), "temp": round(float(e["temp_meanAnn"]), 1),
+                           "rain": round(float(e["precip_ann"])), "slope": round(float(e["slope_deg"])),
+                           "coast_km": round(float(np.expm1(e["distance_coast"])) / 1000, 1),
+                           "covers": {k: round(v / m.sum(), 2) for k, v in covers.head(4).items()},
+                           "wetland": has_wl})
         for stage in STAGES:
             sel = (visits["stage"] == stage).to_numpy()
             d = dist(zc, visit_Z[sel])
@@ -409,10 +415,15 @@ def main():
             nearest = float(fin.min()) if len(fin) else np.nan
             near_txt = f"nearest {nearest:.2f}" if np.isfinite(nearest) else "none pass the climate/coast veto"
             report.append(f"### {stage}" + (" (best available, not close matches)" if tier != "close" else ""))
+            meta = {"unit": u + 1, "stage": stage, "tier": tier, "limit": limit, "n_plots": int(n_plots),
+                    "n_obs": int(len(onear)), "nearest": None if not np.isfinite(nearest) else round(nearest, 3),
+                    "enough": True, "obs_only": False, "plots_used": []}
+            stages_meta.append(meta)
             report.append(f"- Evidence: {n_plots} NVS plots within distance {limit} "
                           f"({near_txt}); {len(onear)} observations within {limit}")
             if n_plots < min_p and len(onear) < min_o:
                 report += ["- **Not enough similar sites for a list, even allowing weaker matches.**", ""]
+                meta["enough"] = False
                 continue
             if tier != "close":
                 report.append(f"- **No close matches (within {MAX_D}).** These are the nearest sites that "
@@ -420,10 +431,13 @@ def main():
                               "check, not a prediction.")
                 if n_plots:
                     pl = visits.loc[near].assign(d=d[pi]).drop_duplicates(["lat", "lon"]).head(5)
+                    meta["plots_used"] = [{"lat": r.lat, "lon": r.lon, "year": int(r.year) if pd.notna(r.year) else None,
+                                           "d": round(r.d, 3)} for r in pl.itertuples()]
                     report.append("- Plots used: " + "; ".join(
                         f"{r.lat:.4f}, {r.lon:.4f} ({int(r.year) if pd.notna(r.year) else '?'}, distance {r.d:.2f})"
                         for r in pl.itertuples()))
             if n_plots < min_p:
+                meta["obs_only"] = True
                 report.append(f"- Fewer than {min_p} plots: list from observations only, "
                               "so it shows what people have recorded, not what is absent.")
             spp = sorted(set(freq.index) | set(oshare.index))
@@ -449,6 +463,9 @@ def main():
                 tier, wi = "best available", within(wd, FALLBACK_D, K_OBS)
             wnear = rec[wsel].iloc[wi]
             limit = MAX_D if tier == "close" else FALLBACK_D
+            stages_meta.append({"unit": u + 1, "stage": "Wetland", "tier": tier, "limit": limit, "n_plots": 0,
+                                "n_obs": int(len(wnear)), "nearest": None, "enough": len(wnear) >= 10,
+                                "obs_only": True, "plots_used": []})
             report += ["### Wetland (records inside natural GDC wetlands at similar sites)"
                        + (" (best available, not close matches)" if tier != "close" else ""),
                        f"- Evidence: {len(wnear)} records within distance {limit}"]
@@ -483,6 +500,12 @@ def main():
                "- Most NVS plots date from the 1950s-60s and lie in the western ranges.",
                "- A starting list to check on the ground, not a survey."]
     (out_dir / "report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
+    sp_json = json.loads(sp.to_json(orient="records")) if len(sp) else []
+    (out_dir / "report.json").write_text(json.dumps({
+        "site": site, "region": region, "n_on_site": n_on_site, "on_site_buffer_m": ON_SITE_BUFFER_M,
+        "max_d": MAX_D, "fallback_d": FALLBACK_D, "units": units_meta, "stages": stages_meta,
+        "species": sp_json}, ensure_ascii=False, default=lambda o: o.item() if hasattr(o, "item") else str(o)),
+        encoding="utf-8")
     print("\n".join(report))
 
 

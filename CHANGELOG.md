@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.10.0 (November 2026)
+
+- **Map interface.** `python scripts/serve.py` starts a local web page at
+  http://127.0.0.1:7882. Draw a site on the map, or load a KML, KMZ or
+  GeoJSON (e.g. exported from Occurd), and press Predict (about 10
+  seconds). The page shows:
+  - each unit on the map, with its climate, slope, distance to the coast and
+    current land cover;
+  - a tab for each stage (mature forest, regenerating, open ground, wetland),
+    marked green for close matches, amber for best available and grey for not
+    enough evidence;
+  - species tables with common and scientific names, % of plots (or of
+    records), and NZTCS threat status for threatened species;
+  - the NVS plots used for best-available lists, as markers on the map.
+  It also lists previous runs and downloads the species list as CSV.
+- The server binds to 127.0.0.1 only. The records include NVS plots under
+  CC BY-NC, so the page is for local use, not publishing.
+- `predict.py` also writes `report.json` (units, per-stage evidence and
+  species) for the page.
+
 ## v0.9.0 (November 2026)
 
 - **Growth-form table.** `config/growth_forms.json` gives every native genus

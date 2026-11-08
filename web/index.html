@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rightree</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 6 17h5l-4 6h7v6h4v-6h7l-4-6h5z' fill='%232e7d4f'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+<style>
+:root {
+  --bg: #f6f7f4; --panel: #ffffff; --ink: #1d2a22; --muted: #5f6d64; --line: #dfe4dd;
+  --accent: #2e7d4f; --accent-ink: #ffffff; --soft: #eaf3ec; --warn: #9a5b00; --warn-soft: #fff4e0;
+  --bar: #2e7d4f; --bar2: #8fbf9f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121714; --panel: #1a211d; --ink: #e4ebe6; --muted: #9aa8a0; --line: #2c3631;
+    --accent: #5cb57f; --accent-ink: #0d1510; --soft: #1f2d25; --warn: #e3a64a; --warn-soft: #2e2618;
+    --bar: #5cb57f; --bar2: #2f6b47;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: grid; grid-template-columns: 440px 1fr; }
+#side { display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--panel); min-height: 0; }
+header { padding: 14px 18px 10px; border-bottom: 1px solid var(--line); }
+header h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
+header h1 span { color: var(--accent); }
+header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+#controls { padding: 12px 18px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; }
+input[type=text], select { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink); font: inherit; }
+button { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  font: inherit; cursor: pointer; white-space: nowrap; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button:disabled { opacity: .5; cursor: default; }
+.hint { color: var(--muted); font-size: 12.5px; }
+#status { font-size: 13px; }
+#status.err { color: #c0392b; }
+#results { flex: 1; overflow-y: auto; padding: 4px 18px 24px; }
+.empty { color: var(--muted); padding: 20px 0; }
+.empty ol { padding-left: 18px; }
+.unit { border: 1px solid var(--line); border-radius: 8px; margin: 14px 0; overflow: hidden; }
+.unit-head { padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; margin-top: 3px; }
+.unit-head h2 { margin: 0; font-size: 15px; }
+.unit-head .env { color: var(--muted); font-size: 12.5px; }
+.tabs { display: flex; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tab { flex: 1; padding: 7px 6px; border: 0; border-radius: 0; background: none; font-size: 12.5px; color: var(--muted);
+  border-bottom: 2px solid transparent; }
+.tab.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.tab .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
+.dot.close { background: var(--accent); } .dot.best { background: var(--warn); } .dot.none { background: var(--line); }
+.stage { padding: 10px 12px 12px; }
+.badge { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 10px; font-weight: 600; }
+.badge.close { background: var(--soft); color: var(--accent); }
+.badge.best { background: var(--warn-soft); color: var(--warn); }
+.evidence { color: var(--muted); font-size: 12.5px; margin: 6px 0; }
+.note { background: var(--warn-soft); color: var(--ink); border-radius: 6px; padding: 7px 9px; font-size: 12.5px; margin: 6px 0; }
+.note.plain { background: var(--soft); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11.5px; padding: 4px 4px; border-bottom: 1px solid var(--line); }
+td { padding: 4px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.sci { font-style: italic; color: var(--muted); font-size: 12px; }
+td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.barcell { width: 70px; }
+.bar { height: 8px; border-radius: 4px; background: var(--line); position: relative; margin-top: 5px; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--bar); }
+.bar i.obs { background: var(--bar2); }
+.threat { font-size: 11px; color: #c0392b; font-weight: 600; }
+.more { margin-top: 6px; font-size: 12.5px; }
+.foot { color: var(--muted); font-size: 12px; margin-top: 14px; }
+.foot summary { cursor: pointer; }
+#map { height: 100%; }
+#busy { position: absolute; inset: 0; background: rgba(0,0,0,.25); display: none; align-items: center; justify-content: center; z-index: 1000; }
+#busy div { background: var(--panel); color: var(--ink); padding: 14px 18px; border-radius: 8px; box-shadow: 0 4px 18px rgba(0,0,0,.2); }
+.leaflet-container { font: inherit; }
+@media (max-width: 800px) {
+  body { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; }
+  #side { order: 2; border-right: 0; border-top: 1px solid var(--line); }
+  #mapwrap { order: 1; }
+}
+</style>
+</head>
+<body>
+<aside id="side">
+  <header>
+    <h1>Right<span>ree</span></h1>
+    <p>Native plants expected at a site, from where they grow in similar places nearby.</p>
+  </header>
+  <div id="controls">
+    <div class="row">
+      <input id="name" type="text" placeholder="Site name (optional)">
+      <select id="region" title="Region data"></select>
+    </div>
+    <div class="row">
+      <button id="draw" title="Draw the site boundary on the map">Draw area</button>
+      <button id="load" title="Load a KML, KMZ or GeoJSON, e.g. exported from Occurd">Load file…</button>
+      <input id="file" type="file" accept=".kml,.kmz,.geojson,.json" hidden>
+      <button id="run" class="primary" disabled>Predict</button>
+    </div>
+    <div class="row">
+      <select id="runs"><option value="">Previous runs…</option></select>
+      <button id="csv" disabled title="Download the species list as CSV">CSV</button>
+    </div>
+    <div id="status" class="hint">Draw an area or load a file to start.</div>
+  </div>
+  <div id="results">
+    <div class="empty">
+      <ol>
+        <li>Draw your site on the map, or load a KML exported from Occurd.</li>
+        <li>Press <b>Predict</b>. It takes about 10 seconds.</li>
+        <li>Each part of the site gets lists for three stages: <b>mature forest</b>, <b>regenerating</b>
+          (kānuka, scrub, young hardwoods) and <b>open ground</b>, plus a <b>wetland</b> list where there is one.</li>
+      </ol>
+      <p><span class="badge close">Close matches</span> are good evidence.
+        <span class="badge best">Best available</span> means no close matches, so treat the list as a lead to check.</p>
+    </div>
+  </div>
+</aside>
+<div id="mapwrap" style="position:relative">
+  <div id="map"></div>
+  <div id="busy"><div>Predicting… about 10 seconds</div></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script>
+const UNIT_COLOURS = ["#2e7d4f", "#c0662b", "#3b6fb6", "#8e44ad"];
+const STAGE_SHORT = {"Mature forest": "Mature forest", "Regenerating (hardwoods, mānuka/kānuka, scrub)": "Regenerating",
+  "Open (grassland, riverbed, coast)": "Open ground", "Wetland": "Wetland"};
+const STAGE_HELP = {
+  "Mature forest": "Species of native forest at the most similar sites: the long-term target.",
+  "Regenerating": "Species of kānuka/mānuka, scrub and young hardwoods at similar sites: nurse crop and early planting.",
+  "Open ground": "Natives that grow in grassland, riverbeds or on the coast at similar sites, away from bush edges.",
+  "Wetland": "Species recorded inside natural wetlands (GDC mapping) at similar sites."
+};
+const THREAT = c => c && !/Not Threatened|Introduced|Data Deficient|Not Assessed|^nan$/i.test(c);
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const pct = v => v > 0 ? Math.round(v * 100) + "%" : "";
+
+const map = L.map("map", {zoomControl: true}).setView([-38.4, 177.9], 9);
+const topo = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {maxZoom: 19, attribution: "© OpenStreetMap contributors"});
+const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {maxZoom: 19, attribution: "Imagery © Esri, Maxar, Earthstar Geographics"});
+sat.addTo(map);
+L.control.layers({"Imagery": sat, "Street map": topo}, null, {position: "topright"}).addTo(map);
+
+const drawn = new L.FeatureGroup().addTo(map);
+const resultLayer = L.layerGroup().addTo(map);
+const plotLayer = L.layerGroup().addTo(map);
+let regionLayer, pendingFile = null, current = null;
+const drawer = new L.Draw.Polygon(map, {shapeOptions: {color: "#ffd84d", weight: 2, fillOpacity: .1}, showArea: true});
+
+function setStatus(msg, err) { const s = $("#status"); s.textContent = msg; s.className = err ? "err" : "hint"; }
+function ready() { $("#run").disabled = !(drawn.getLayers().length || pendingFile); }
+
+$("#draw").onclick = () => { drawer.enable(); setStatus("Click points on the map; click the first point to finish."); };
+map.on(L.Draw.Event.CREATED, e => {
+  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers(); pendingFile = null;
+  drawn.addLayer(e.layer); ready();
+  const ha = L.GeometryUtil.geodesicArea(e.layer.getLatLngs()[0]) / 1e4;
+  setStatus(`Area drawn: ${ha < 10 ? ha.toFixed(1) : Math.round(ha).toLocaleString()} ha. Press Predict.`);
+});
+$("#load").onclick = () => $("#file").click();
+$("#file").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const buf = new Uint8Array(await f.arrayBuffer());
+  let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  pendingFile = {name: f.name, b64: btoa(bin)};
+  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
+  if (/\.(geo)?json$/i.test(f.name)) { try { const g = L.geoJSON(JSON.parse(new TextDecoder().decode(buf)), {style: {color: "#ffd84d", weight: 2, fillOpacity: .1}}); g.eachLayer(l => drawn.addLayer(l)); map.fitBounds(drawn.getBounds()); } catch {} }
+  $("#name").value = f.name.replace(/\.[^.]+$/, "").replace(/_\d{4}-\d{2}-\d{2}_\d+$/, "");
+  setStatus(`Loaded ${f.name}. Press Predict.`); ready(); e.target.value = "";
+};
+
+$("#run").onclick = async () => {
+  const body = {name: $("#name").value, region: $("#region").value};
+  if (pendingFile) Object.assign(body, {file_name: pendingFile.name, file_b64: pendingFile.b64});
+  else body.geojson = drawn.toGeoJSON();
+  $("#busy").style.display = "flex"; $("#run").disabled = true; setStatus("Predicting…");
+  try {
+    const r = await fetch("/api/predict", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Prediction failed");
+    show(j); loadRuns(j.id); setStatus("Done.");
+  } catch (err) { setStatus(err.message, true); }
+  finally { $("#busy").style.display = "none"; ready(); }
+};
+
+$("#runs").onchange = async e => {
+  if (!e.target.value) return;
+  const r = await fetch("/api/runs/" + e.target.value); const j = await r.json();
+  if (r.ok) { drawn.clearLayers(); pendingFile = null; show(j); ready(); setStatus("Showing " + e.target.value); }
+};
+
+$("#csv").onclick = () => {
+  if (!current) return;
+  const cols = ["unit", "stage", "tier", "common_name", "species", "plot_freq", "n_plots", "obs_share", "n_obs", "category", "bioStatus"];
+  const lines = [cols.join(",")].concat(current.species.map(s => cols.map(c => {
+    const v = s[c] ?? ""; return /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v; }).join(",")));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\n")], {type: "text/csv"}));
+  a.download = `rightree_${current.id}.csv`; a.click();
+};
+
+function show(j) {
+  current = j; $("#csv").disabled = false;
+  resultLayer.clearLayers(); plotLayer.clearLayers();
+  const ug = L.geoJSON(j.units_geojson, {style: f => ({color: UNIT_COLOURS[(f.properties.unit - 1) % 4], weight: 1.5, fillOpacity: .35})})
+    .bindTooltip(l => "Unit " + l.feature.properties.unit).addTo(resultLayer);
+  if (ug.getLayers().length) map.fitBounds(ug.getBounds(), {padding: [40, 40], maxZoom: 16});
+
+  const multi = j.units.length > 1;
+  let html = `<p class="evidence">${j.units.length > 1 ? `The site splits into ${j.units.length} parts that differ in climate, terrain or soil.` : "The site is treated as one unit."}
+    ${j.n_on_site ? `${j.n_on_site} records on or within ${j.on_site_buffer_m} m of the site were left out, so existing plantings don't feed the list.` : ""}</p>`;
+  for (const u of j.units) {
+    const stages = j.stages.filter(s => s.unit === u.unit);
+    const covers = Object.entries(u.covers).map(([k, v]) => `${esc(k)} ${Math.round(v * 100)}%`).join(", ");
+    html += `<section class="unit" data-unit="${u.unit}">
+      <div class="unit-head"><span class="swatch" style="background:${UNIT_COLOURS[(u.unit - 1) % 4]}"></span>
+        <div><h2>${multi ? `Unit ${u.unit} · ` : ""}${u.ha.toLocaleString()} ha</h2>
+        <div class="env">${u.temp} °C mean · ${u.rain.toLocaleString()} mm rain · slope ${u.slope}° · ${u.coast_km} km from coast${u.wetland ? " · natural wetland" : ""}<br>Now: ${covers}</div></div></div>
+      <div class="tabs">${stages.map((s, i) => {
+        const cls = !s.enough ? "none" : s.tier === "close" ? "close" : "best";
+        return `<button class="tab${i === firstGood(stages) ? " on" : ""}" data-i="${i}"><span class="dot ${cls}"></span>${STAGE_SHORT[s.stage] || s.stage}</button>`; }).join("")}</div>
+      <div class="stage"></div></section>`;
+  }
+  html += `<details class="foot"><summary>How to read this</summary>
+    <p><b>% of plots</b>: share of the most similar NVS survey plots that recorded the species. Plots list everything present, so this is the strongest evidence.
+    <b>% of records</b>: share of nearby iNaturalist and herbarium records. These only show what people chose to record.</p>
+    <p>Similar means within ${j.max_d} on a 0–1 scale across climate, terrain and soil, and not far off in temperature, frost, rainfall or distance to the coast.
+    Best-available lists go out to ${j.fallback_d}.</p>
+    <p>Most NVS plots date from the 1950s–60s and lie in the western ranges. Natives only. A starting list to check on the ground, not a survey.</p></details>`;
+  $("#results").innerHTML = html;
+  document.querySelectorAll(".unit").forEach(sec => {
+    const unit = +sec.dataset.unit, stages = j.stages.filter(s => s.unit === unit);
+    const render = i => { sec.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", +t.dataset.i === i));
+      sec.querySelector(".stage").innerHTML = stageHtml(stages[i], j); drawPlots(stages[i]); bindMore(sec, stages[i], j); };
+    sec.querySelectorAll(".tab").forEach(t => t.onclick = () => render(+t.dataset.i));
+    sec.querySelector(".unit-head").onclick = () => ug.eachLayer(l => { if (l.feature.properties.unit === unit) map.fitBounds(l.getBounds(), {maxZoom: 16}); });
+    render(firstGood(stages));
+  });
+}
+function firstGood(stages) { const i = stages.findIndex(s => s.enough && s.tier === "close"); return i >= 0 ? i : Math.max(0, stages.findIndex(s => s.enough)); }
+
+function stageHtml(s, j, all) {
+  const name = STAGE_SHORT[s.stage] || s.stage;
+  let h = `<div>${s.enough ? `<span class="badge ${s.tier === "close" ? "close" : "best"}">${s.tier === "close" ? "Close matches" : "Best available"}</span>` : ""}
+    <span class="hint"> ${esc(STAGE_HELP[name] || "")}</span></div>`;
+  const near = s.nearest == null ? (s.stage === "Wetland" ? "" : "no plots pass the climate/coast check") : `nearest plot ${s.nearest.toFixed(2)}`;
+  h += `<div class="evidence">Evidence: ${s.n_plots} plots and ${s.n_obs} records within ${s.limit}${near ? ` (${near})` : ""}.</div>`;
+  if (!s.enough) return h + `<div class="note">Not enough similar sites for a list, even allowing weaker matches.</div>`;
+  if (s.tier !== "close") h += `<div class="note">No close matches. These are the nearest sites that still have a similar climate and distance to the coast.
+    Treat as a lead to check, not a prediction.${s.plots_used.length ? " Plots used are shown on the map." : ""}</div>`;
+  if (s.obs_only && s.stage !== "Wetland") h += `<div class="note plain">Too few survey plots, so this list is from records only. It shows what people have recorded, not what is absent.</div>`;
+  const rows = j.species.filter(r => r.unit === s.unit && r.stage === s.stage);
+  const n = all ? rows.length : Math.min(25, rows.length);
+  const usePlots = rows.some(r => r.plot_freq > 0);
+  h += `<table><thead><tr><th>Species</th><th class="num">${usePlots ? "% of plots" : "% of records"}</th><th></th></tr></thead><tbody>`;
+  for (const r of rows.slice(0, n)) {
+    const v = usePlots ? r.plot_freq : r.obs_share, max = usePlots ? 1 : Math.max(...rows.map(x => x.obs_share));
+    h += `<tr><td>${esc(r.common_name || "")}${THREAT(r.category) ? ` <span class="threat" title="NZTCS">${esc(r.category)}</span>` : ""}
+      <div class="sci" style="font-style:italic;color:var(--muted);font-size:12px">${esc(r.species)}</div></td>
+      <td class="num">${pct(v) || (usePlots && r.obs_share ? `<span class="hint">${pct(r.obs_share)} rec.</span>` : "")}</td>
+      <td class="barcell"><div class="bar"><i class="${usePlots ? "" : "obs"}" style="width:${Math.round(100 * v / (max || 1))}%"></i></div></td></tr>`;
+  }
+  h += `</tbody></table>`;
+  if (rows.length > n) h += `<button class="more">Show all ${rows.length}</button>`;
+  return h;
+}
+function bindMore(sec, s, j) { const b = sec.querySelector(".more"); if (b) b.onclick = () => { sec.querySelector(".stage").innerHTML = stageHtml(s, j, true); }; }
+
+function drawPlots(s) {
+  plotLayer.clearLayers();
+  for (const p of s.plots_used || [])
+    L.circleMarker([p.lat, p.lon], {radius: 6, color: "#fff", weight: 2, fillColor: "#e08a1e", fillOpacity: 1})
+      .bindTooltip(`NVS plot ${p.year ?? ""} · distance ${p.d.toFixed(2)}`).addTo(plotLayer);
+}
+
+async function loadRuns(sel) {
+  const runs = await (await fetch("/api/runs")).json();
+  $("#runs").innerHTML = `<option value="">Previous runs…</option>` +
+    runs.map(r => `<option value="${esc(r.id)}"${r.id === sel ? " selected" : ""}>${esc(r.id)}</option>`).join("");
+}
+(async () => {
+  const regions = await (await fetch("/api/regions")).json();
+  $("#region").innerHTML = Object.keys(regions).map(k => `<option value="${k}">${k}</option>`).join("");
+  const k = Object.keys(regions)[0];
+  if (k) { regionLayer = L.geoJSON(regions[k].geojson, {style: {color: "#fff", weight: 1.5, dashArray: "4 4", fill: false}, interactive: false}).addTo(map);
+    map.fitBounds(regionLayer.getBounds()); }
+  loadRuns();
+})();
+</script>
+</body>
+</html>

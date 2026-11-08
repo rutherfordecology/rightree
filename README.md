@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.9.0). First predictions run; native records are tagged with environment,
+Status: prototype (v0.10.0). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
@@ -39,11 +39,23 @@ files and the but-is-it-threatened resolver).
 
 ## Predicting a site
 
+### On a map
+
+```bash
+python scripts/serve.py
+```
+
+Open http://127.0.0.1:7882. Draw the site, or load a KML exported from Occurd,
+and press Predict. Results show by unit and stage, with the plots used on the
+map, and can be downloaded as CSV. It runs locally only.
+
+### From the command line
+
 ```bash
 python scripts/predict.py <region> <site-name> <area.kml | .kmz | .geojson | "POLYGON((lon lat, ...))">
 ```
 
-Writes `report.md`, `species.csv` and `units.geojson` to
+Writes `report.md`, `report.json`, `species.csv` and `units.geojson` to
 `data/predictions/<site-name>/`.
 
 ## How it works
