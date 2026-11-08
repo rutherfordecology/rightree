@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
-/* Colours, type and map controls follow Occurd's visual style. */
+/* Colours, type and map controls: Rutherford Ecology house style. */
 :root {
   --slate: #263b27; --grey: #5F6B66; --ink: #000; --bg: #fff; --rule: #d5d9d7; --hover: #eef0ef;
   --close: #263b27; --best: #a15c00; --best-soft: #fff4e3; --soft: #eef0ef; --threat: #a1261b;
@@ -40,7 +40,7 @@ button:hover, .btn:hover { background: var(--hover); }
 button.primary { background: #263b27; color: #fff; border-color: #263b27; font-weight: 600; }
 button:disabled { opacity: .4; cursor: default; }
 .hint { color: var(--grey); font-size: 12.5px; }
-/* Area list, as Occurd's drawn-polygon list */
+/* Area list */
 #polyList:empty { display: none; }
 .poly-item { display: flex; align-items: center; gap: 6px; padding: 4px 0 4px 10px; border-left: 3px solid #C8611A; font-size: 13px; }
 .poly-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
@@ -124,7 +124,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
 #welcome .regpick { display: flex; gap: 10px; align-items: center; margin: 4px 0 12px; font-weight: 600; }
 #welcome .regpick select { flex: 1; }
 
-/* Occurd's Leaflet / Leaflet.draw overrides */
+/* Leaflet / Leaflet.draw overrides */
 .leaflet-container { font-family: var(--font); }
 .leaflet-bar, .leaflet-touch .leaflet-bar, .leaflet-control-layers, .leaflet-touch .leaflet-control-layers {
   border-radius: 0 !important; box-shadow: none !important; border: 1px solid #263b27 !important; }
@@ -162,7 +162,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
       <select id="region" title="Region data"></select>
     </div>
     <div class="row">
-      <button id="load" title="Load a KML, KMZ or GeoJSON, e.g. exported from Occurd">Load file…</button>
+      <button id="load" title="Load a KML, KMZ or GeoJSON">Load file…</button>
       <input id="file" type="file" accept=".kml,.kmz,.geojson,.json" hidden>
       <button id="run" class="primary" disabled>Predict</button>
       <span style="flex:1"></span>
@@ -176,7 +176,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
   <div id="results">
     <div class="empty">
       <ol>
-        <li>Draw your site with the tools at the top left of the map, or load a KML exported from Occurd.</li>
+        <li>Draw your site with the tools at the top left of the map, or load a KML, KMZ or GeoJSON file.</li>
         <li>Press <b>Predict</b>.</li>
         <li>If the site holds distinct habitats it is split into units, mapped and described. Each unit gets lists for
           <b>mature forest</b>, <b>regenerating</b> (kānuka, scrub, young hardwoods) and <b>open ground</b>, plus a
@@ -234,9 +234,9 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
 const LOOKLIKE = "https://occurd.rutherfordecology.co.nz/looklike/";
-const AREA_COLOUR = "#C8611A";            // Occurd's first drawn-area colour
+const AREA_COLOUR = "#C8611A";            // drawn-area colour
 const DRAW_STYLE = {color: "#FF8C00", fillColor: "#FF8C00", fillOpacity: 0.1, weight: 3};
-const UNIT_COLOURS = ["#2c5f8a", "#8a2c2c", "#5a2a7a", "#1a5a6a"];   // Occurd's polygon palette
+const UNIT_COLOURS = ["#2c5f8a", "#8a2c2c", "#5a2a7a", "#1a5a6a"];   // unit palette
 const STAGE_SHORT = {"Mature forest": "Mature forest", "Regenerating (hardwoods, mānuka/kānuka, scrub)": "Regenerating",
   "Open (grassland, riverbed, coast)": "Open ground", "Wetland": "Wetland"};
 const STAGE_HELP = {
@@ -282,7 +282,7 @@ function fmtVal(v, k) {
   return (+v).toLocaleString(undefined, {minimumFractionDigits: dp, maximumFractionDigits: dp}) + (unit && unit !== "class" ? " " + unit : "");
 }
 
-// ── Map: Occurd's basemaps and draw tools ──────────────────────────────────
+// ── Map: basemaps and draw tools ──────────────────────────────────────────
 const map = L.map("map").setView([-38.4, 177.9], 9);
 const tile = {maxZoom: 19, keepBuffer: 4};
 const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {...tile, attribution: "&copy; OpenStreetMap contributors"});
@@ -310,7 +310,7 @@ const drawControl = new L.Control.Draw({
          polyline: false, circle: false, circlemarker: false, marker: false}
 }).addTo(map);
 
-// Finish / Undo / Cancel bar and segment lengths while drawing (as in Occurd)
+// Finish / Undo / Cancel bar and segment lengths while drawing
 const bar = $("#drawActionBar"), finishBtn = $("#finishDrawBtn");
 let handler = null, segLabels = [], moveLabel = null, lastVertex = null, drawingPoly = false;
 const fmtDist = m => m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";
@@ -344,7 +344,7 @@ const onCancel = guard(() => handler && handler.disable && handler.disable());
 for (const [id, fn] of [["finishDrawBtn", onFinish], ["undoPointBtn", onUndo], ["cancelDrawBtn", onCancel]])
   for (const ev of ["pointerdown", "click"]) $("#" + id).addEventListener(ev, fn);
 
-// A new area is dashed and editable (drag corners), then solid once used — Occurd's convention.
+// A new area is dashed and editable (drag corners), then solid once used.
 map.on(L.Draw.Event.CREATED, e => {
   drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers(); pendingFile = null;
   editing = e.layer;

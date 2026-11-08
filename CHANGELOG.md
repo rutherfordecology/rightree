@@ -3,6 +3,8 @@
 ## v0.19.1 (November 2026)
 
 - Removed the one-line description under the title in the sidebar.
+- The map page no longer mentions Occurd (load-file hint, how-to step and
+  code comments). Species names still open LookLike.
 
 ## v0.19.0 (November 2026)
 
