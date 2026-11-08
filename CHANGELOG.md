@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.19.2 (November 2026)
+
+- "by Rutherford Ecology" after the title and version in the header.
+
 ## v0.19.1 (November 2026)
 
 - Removed the one-line description under the title in the sidebar.
