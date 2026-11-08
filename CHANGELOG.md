@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.11.1 (November 2026)
+
+- The map page no longer says how long a prediction takes.
+
 ## v0.11.0 (November 2026)
 
 - **Subspecies matching fixed.** A species-level record was being assigned
