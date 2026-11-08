@@ -57,6 +57,11 @@ def main():
     df = df[df["species"].notna()]; steps["to_species"] = len(df)
     df = df[df["datasetKey"] != PLANTNET_AUTO]; steps["not_plantnet_auto"] = len(df)
     df = df[df["coordinateUncertaintyInMeters"] <= MAX_UNCERTAINTY_M]; steps["within_100m"] = len(df)
+    sites = json.loads((root / "config" / "cultivated_sites.json").read_text(encoding="utf-8"))["sites"]
+    for s in sites:
+        inside = (df["decimalLatitude"].between(*s["lat"]) & df["decimalLongitude"].between(*s["lon"]))
+        df = df[~inside]
+    steps["not_cultivated_sites"] = len(df)
 
     df["source"] = df["datasetKey"].map({NVS: "NVS", INAT: "iNaturalist"}).fillna("other")
     date = df["eventDate"].fillna("").str.slice(0, 10)

@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.4.0 (November 2026)
+
+- Land cover: `scripts/fetch_lcdb.py` pulls LCDB v6 (1996–2023) polygons
+  from the LRIS WFS service and puts 2023 cover on the 100 m grid. The LRIS
+  key is read from `.lris_key` (gitignored) or `LRIS_KEY`. Gisborne plus
+  50 km: 50,051 polygons, 31 classes.
+- `scripts/tag_records.py` gives every record its land cover, using the
+  exact LCDB polygon and the mapping date nearest the record's year (1996 for
+  older records). It also adds the GDC wetland polygon it falls in and the
+  value of every environmental layer at its cell.
+- Cultivated sites: `config/cultivated_sites.json` lists planted collections
+  whose records are dropped on load. It starts with Eastwoodhill Arboretum,
+  where 870 records (mostly Auckland Museum specimens of planted oaks and
+  maples) had shown up as a "Deciduous Hardwoods" cluster with 568 species.
+  Gisborne now keeps 15,124 records of 814 species.
+
 ## v0.3.0 (November 2026)
 
 - Wetlands from Gisborne District Council's Regional Wetland Assessment 2022

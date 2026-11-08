@@ -9,20 +9,30 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.3.0). Occurrence data, environmental layers and wetlands load;
-nothing predicts yet. See [`docs/design.md`](docs/design.md).
+Status: prototype (v0.4.0). Records are loaded and tagged with environment,
+land cover and wetlands; nothing predicts yet. See
+[`docs/design.md`](docs/design.md).
 
-## Loading occurrence data
+## Building a region's data
 
-1. In Occurd's Big Data Mode, draw the area, tick Angiosperms, Gymnosperms and
-   Ferns & allies, clear the From date, and fetch.
-2. Save GBIF's zip, keeping its name (`<downloadkey>.zip`), in `data/`.
-3. Run:
+1. **Occurrences.** In Occurd's Big Data Mode, draw the area, tick
+   Angiosperms, Gymnosperms and Ferns & allies, clear the From date, and fetch.
+   Save GBIF's zip, keeping its name (`<downloadkey>.zip`), in `data/`.
+2. **Region boundary.** Save it as `data/env/<name>/region_osm_nominatim.json`
+   (a Nominatim search result with `polygon_geojson=1`).
+3. **LRIS key.** Put your LRIS API key in `.lris_key` (gitignored).
+4. Run, with the region's lon/lat bounding box and a margin in km:
 
 ```bash
 python scripts/load_gbif.py data/<downloadkey>.zip <name>
 python scripts/summarise_gbif.py <name>
+python scripts/fetch_env.py <name> <minlon,minlat,maxlon,maxlat> 50
+python scripts/fetch_gdc_wetlands.py <name>
+python scripts/fetch_lcdb.py <name> <minlon,minlat,maxlon,maxlat> 50
+python scripts/tag_records.py <name>
 ```
+
+`fetch_gdc_wetlands.py` is Gisborne-only.
 
 ## How it works (planned)
 

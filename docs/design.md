@@ -60,6 +60,16 @@ dry. Check this before treating "no wetland" as an absence. It covers
 Gisborne only, so a wider analogue pool will need another source outside the
 region (for example the national wetland layers or LCDB's wetland classes).
 
+**Land cover (v0.4.0): LCDB v6** from the LRIS WFS service (layer 123148,
+CC BY 4.0, needs an LRIS key). Records get the cover at the LCDB date nearest
+their year. Most NVS plots predate 1996, so for them this is the 1996 cover,
+which assumes the site had not changed since the plot was measured.
+
+In Gisborne, the succession split is thin outside forest. Indigenous forest
+has 568 NVS visits and broadleaved hardwoods 42, but mānuka/kānuka has only 12
+and pasture 8. Scrub and early-succession lists will lean on iNaturalist and
+herbarium records, which have no absences, unless the area is widened.
+
 ## Occurrence data
 
 - **GBIF:** presence-only. Filter to coordinate uncertainty of 100 m or
@@ -77,6 +87,11 @@ region (for example the national wetland layers or LCDB's wetland classes).
   nvs.landcareresearch.co.nz (register, add to Request Cart, owner approval).
 - **Covenant species records are excluded.** They are private and must not be
   used for training, matching or output.
+
+- **Cultivated records.** GBIF's simple CSV has no `establishmentMeans`, so
+  planted collections get through. Known sites go in
+  `config/cultivated_sites.json`. A native-species filter (NZPCN or NZOR) is
+  still needed, and planted natives in gardens will remain a source of noise.
 
 ## Known pitfalls
 
