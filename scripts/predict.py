@@ -344,10 +344,18 @@ def main():
             cn = v.get("maori") or v.get("common")
             if cn:
                 common.setdefault(clean_name(v["name"]), cn)
-                common.setdefault(" ".join(v["name"].split()[:2]), cn)
+    # A species-level name NZTCS only lists by subspecies or variety takes the
+    # nominate's common name (Piper excelsum -> kawakawa, from subsp. excelsum),
+    # never another subspecies' (subsp. delangei is de Lange's kawakawa).
+    for v in nztcs.values():
+        if isinstance(v, dict) and v.get("name"):
+            w = v["name"].split()
+            cn = v.get("maori") or v.get("common")
+            if cn and len(w) >= 4 and w[3] == w[1]:
+                common.setdefault(" ".join(w[:2]), cn)
 
     def label(s):
-        c = common.get(s) or common.get(" ".join(s.split()[:2]))
+        c = common.get(s)
         return f"{c} ({s})" if c else s
 
     nvs = rec[rec["source"] == "NVS"]

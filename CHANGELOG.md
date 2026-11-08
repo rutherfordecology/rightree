@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.11.2 (November 2026)
+
+- Fixed common names for species that NZTCS splits into subspecies. v0.11.0
+  gave a species-level name the first common name found under it, so
+  *Piper excelsum* showed as "de Lange's kawakawa" (subsp. *delangei*, At
+  Risk). It now takes the nominate's name (kawakawa, from subsp.
+  *excelsum*), or none. All 34 split species in the Gisborne data were
+  checked.
+- Report labels no longer borrow a species' common name for a different
+  subspecies.
+
 ## v0.11.1 (November 2026)
 
 - The map page no longer says how long a prediction takes.
