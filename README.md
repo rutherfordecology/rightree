@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.11.2). First predictions run; native records are tagged with environment,
+Status: prototype (v0.12.0). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 

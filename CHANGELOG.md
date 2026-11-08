@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.12.0 (November 2026)
+
+- The map page lists the site area under the buttons, like Occurd's
+  drawn-polygon list, with its name and size. The name updates as you type.
+  Its ✕ deletes the area, its units and plot markers and the results, ready
+  for the next site.
+
 ## v0.11.2 (November 2026)
 
 - Fixed common names for species that NZTCS splits into subspecies. v0.11.0

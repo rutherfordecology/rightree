@@ -39,6 +39,14 @@ button:hover, .btn:hover { background: var(--hover); }
 button.primary { background: #263b27; color: #fff; border-color: #263b27; font-weight: 600; }
 button:disabled { opacity: .4; cursor: default; }
 .hint { color: var(--grey); font-size: 12.5px; }
+/* Area list, as Occurd's drawn-polygon list */
+#polyList:empty { display: none; }
+.poly-item { display: flex; align-items: center; gap: 6px; padding: 4px 0 4px 10px; border-left: 3px solid #C8611A; font-size: 13px; }
+.poly-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.poly-item-count { color: var(--grey); font-size: 12px; white-space: nowrap; }
+.poly-remove { cursor: pointer; color: var(--slate); font-size: 16px; line-height: 1; padding: 4px 8px; min-width: 30px; min-height: 30px;
+  display: flex; align-items: center; justify-content: center; border: 0; background: none; }
+.poly-remove:hover { color: var(--threat); background: none; }
 #status { font-size: 13px; }
 #status.err { color: var(--threat); }
 #results { flex: 1; overflow-y: auto; padding: 4px 18px 24px; }
@@ -135,6 +143,7 @@ a.sp:hover { color: var(--slate); border-bottom-color: var(--slate); }
       <button id="dlCsv" disabled title="Species lists for every unit and stage">Download species CSV</button>
       <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON">Units GeoJSON</button>
     </div>
+    <div id="polyList"></div>
     <div id="status" class="hint">Draw an area with the polygon or rectangle tool on the map, or load a file.</div>
   </div>
   <div id="results">
@@ -293,16 +302,49 @@ function finishEdit() {
   editing.setStyle({color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.1, weight: 2, dashArray: null});
   editing = null;
 }
+const EMPTY_RESULTS = document.querySelector("#results").innerHTML;
+function areaHa() {
+  let ha = 0;
+  drawn.eachLayer(l => {
+    if (!l.getLatLngs) return;
+    let ll = l.getLatLngs();
+    const polys = ll[0] && ll[0].lat !== undefined ? [[ll]] : ll[0] && ll[0][0] && ll[0][0].lat !== undefined ? [ll] : ll;
+    for (const poly of polys) ha += L.GeometryUtil.geodesicArea(poly[0]) / 1e4;
+  });
+  return ha;
+}
+const fmtHa = ha => (ha < 10 ? ha.toFixed(1) : Math.round(ha).toLocaleString()) + " ha";
 function areaStatus() {
-  const l = drawn.getLayers()[0]; if (!l) return;
-  const ha = L.GeometryUtil.geodesicArea(l.getLatLngs()[0]) / 1e4;
-  setStatus(`Area: ${ha < 10 ? ha.toFixed(1) : Math.round(ha).toLocaleString()} ha. Drag the corners to adjust, then press Predict.`);
+  if (!drawn.getLayers().length) return;
+  renderPolyList();
+  setStatus(`Area: ${fmtHa(areaHa())}. Drag the corners to adjust, then press Predict.`);
+}
+// The site area, listed so it can be deleted (one area at a time).
+function renderPolyList() {
+  const el = document.querySelector("#polyList");
+  if (!drawn.getLayers().length && !pendingFile) { el.innerHTML = ""; return; }
+  const name = document.querySelector("#name").value.trim() || (pendingFile ? pendingFile.name : "Drawn area");
+  el.innerHTML = `<div class="poly-item"><span class="poly-item-name" title="${esc(name)}">${esc(name)}</span>
+    <span class="poly-item-count">${drawn.getLayers().length ? fmtHa(areaHa()) : ""}</span>
+    <button class="poly-remove" title="Delete this area and its results">&#x2715;</button></div>`;
+  el.querySelector(".poly-remove").onclick = deleteArea;
+}
+function deleteArea() {
+  if (editing && editing.editing) editing.editing.disable();
+  editing = null; pendingFile = null; current = null;
+  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
+  document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true;
+  document.querySelector("#results").innerHTML = EMPTY_RESULTS;
+  document.querySelector("#name").value = "";
+  renderPolyList(); ready();
+  setStatus("Area deleted. Draw a new one or load a file.");
 }
 
 function setStatus(msg, err) { const s = $("#status"); s.textContent = msg; s.className = err ? "err" : "hint"; }
 function ready() { $("#run").disabled = !(drawn.getLayers().length || pendingFile); }
 
 $("#load").onclick = () => $("#file").click();
+$("#name").addEventListener("input", renderPolyList);
 $("#file").onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   const buf = new Uint8Array(await f.arrayBuffer());
@@ -317,7 +359,7 @@ $("#file").onchange = async e => {
     if (gj) { L.geoJSON(gj, {style}).eachLayer(l => drawn.addLayer(l)); map.fitBounds(drawn.getBounds(), {padding: [50, 50]}); }
   } catch {}
   $("#name").value = f.name.replace(/\.[^.]+$/, "").replace(/_\d{4}-\d{2}-\d{2}_\d+$/, "");
-  setStatus(`Loaded ${f.name}. Press Predict.`); ready(); e.target.value = "";
+  setStatus(`Loaded ${f.name}. Press Predict.`); ready(); renderPolyList(); e.target.value = "";
 };
 function kmlToGeoJSON(text) {
   const doc = new DOMParser().parseFromString(text, "text/xml"), polys = [];
@@ -419,6 +461,7 @@ function show(j) {
   }
   if (!drawn.getLayers().length && ug.getLayers().length) L.geoJSON(j.units_geojson, {style: {color: AREA_COLOUR, weight: 2, fillOpacity: .1, fillColor: AREA_COLOUR}}).eachLayer(l => drawn.addLayer(l));
   drawn.bringToFront();
+  renderPolyList();
   if (ug.getLayers().length) map.fitBounds(ug.getBounds(), {padding: [40, 40], maxZoom: 16});
 
   let html = `<p class="evidence">${multi ? `The site holds ${j.units.length} distinct habitats, mapped as units. Each gets its own lists.` : "The site is one habitat, so it is treated as one unit."}
