@@ -675,7 +675,9 @@ function show(j) {
     ug.eachLayer(l => { const u = l.feature.properties.unit; if (seen.has(u)) return;
       let big = null, area = 0;
       ug.eachLayer(m => { if (m.feature.properties.unit !== u) return; const b = m.getBounds(); const a = (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()); if (a > area) { area = a; big = m; } });
-      seen.add(u); L.tooltip({permanent: true, direction: "center", className: "unit-label"}).setLatLng(big.getBounds().getCenter()).setContent("Unit " + u).addTo(resultLayer); });
+      const lp = l.feature.properties.label;   // inside the unit's largest patch (from the model)
+      seen.add(u); L.tooltip({permanent: true, direction: "center", className: "unit-label"})
+        .setLatLng(lp ? [lp[1], lp[0]] : big.getBounds().getCenter()).setContent("Unit " + u).addTo(resultLayer); });
   }
   if (!drawn.getLayers().length && ug.getLayers().length) L.geoJSON(j.units_geojson, {style: {color: AREA_COLOUR, weight: 2, fillOpacity: .1, fillColor: AREA_COLOUR}}).eachLayer(l => drawn.addLayer(l));
   drawn.bringToFront();

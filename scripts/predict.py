@@ -33,6 +33,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import shapely
+import shapely.ops
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
@@ -329,7 +330,13 @@ def main():
         if g.is_empty:
             continue
         g_ll = json.loads(shapely.to_geojson(nztm.geom_from_nztm(g)))
-        feats.append({"type": "Feature", "properties": {"unit": int(u) + 1}, "geometry": g_ll})
+        # Label point: the spot furthest inside the unit's largest patch, so
+        # a unit made of scattered patches isn't labelled over another unit.
+        part = max(shapely.get_parts(g), key=lambda q: q.area)
+        lp = shapely.ops.polylabel(part, tolerance=10) if part.geom_type == "Polygon" else part.representative_point()
+        lon, lat = nztm.from_nztm(lp.x, lp.y)
+        feats.append({"type": "Feature", "properties": {"unit": int(u) + 1, "label": [round(float(lon), 6), round(float(lat), 6)]},
+                      "geometry": g_ll})
     (out_dir / "units.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}), encoding="utf-8")
 
     # ── reference records ─────────────────────────────────────────────────

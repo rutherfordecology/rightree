@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.17.1 (November 2026)
+
+- **Unit labels sit inside their unit.** A unit made of scattered patches was
+  labelled at the centre of its bounding box, which could fall on another
+  unit. The model now gives each unit a label point (the spot furthest
+  inside its largest patch, `label` in `units.geojson`) and the map uses it.
+
 ## v0.17.0 (November 2026)
 
 - **Plant checklist.** A "Plant checklist (Word)" button downloads a Word
