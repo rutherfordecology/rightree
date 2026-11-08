@@ -25,21 +25,22 @@ Usage:
     python scripts/predict.py tairawhiti <site-name> <polygon.kml|.kmz|.geojson | WKT in lon/lat>
 Writes data/predictions/<site-name>/: report.md, species.csv, units.geojson
 """
+import io
 import json
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import rasterio
-import rasterio.warp
 import shapely
-from rasterio.features import rasterize, shapes
-from rasterio.warp import transform_geom
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
+import gridio
+import nztm
+
 ROOT = Path(__file__).resolve().parent.parent
+GZIP = bytes([0x1F, 0x8B])
 
 GROUPS = {
     "climate": ["temp_meanAnn", "temp_minColdMonth", "precip_ann", "waterBalance_annDeficit",
@@ -130,27 +131,26 @@ def read_polygon(arg):
     return shapely.from_wkt(arg)
 
 
-def env_stack(env_dir, rows, cols):
+def env_stack(grid, rows, cols):
     """Values of every VAR at the given cells."""
-    out = {}
-    for v in VARS:
-        with rasterio.open(env_dir / f"{v}.tif") as s:
-            a = s.read(1).astype("float64")
-            if s.nodata is not None:
-                a[a == s.nodata] = np.nan
-        out[v] = a[rows, cols]
-    return transform_vals(pd.DataFrame(out))
+    return transform_vals(pd.DataFrame({v: grid.float_values(v, rows, cols) for v in VARS}))
 
 
-def region_stats(env_dir, inside, n=200_000, seed=1):
+def region_stats(grid, r, c, n=200_000, seed=1):
+    """Each layer's range across the region's land cells (r, c). Run once by
+    make_tiles.py and saved to region_stats.json."""
     rng = np.random.default_rng(seed)
-    r, c = np.nonzero(inside)
     pick = rng.choice(len(r), size=min(n, len(r)), replace=False)
-    sample = env_stack(env_dir, r[pick], c[pick])
+    sample = env_stack(grid, r[pick], c[pick])
     # Gower-style scaling: each layer by its range across the region
     # (1st-99th percentile, so a few extreme cells don't set the scale).
     lo, hi = sample.quantile(0.01), sample.quantile(0.99)
     return lo, (hi - lo).replace(0, 1)
+
+
+def load_region_stats(env_dir):
+    s = json.loads(gridio.read_bytes(env_dir / "region_stats.json"))
+    return pd.Series(s["lo"])[VARS], pd.Series(s["scale"])[VARS]
 
 
 def gower(a, b):
@@ -263,33 +263,26 @@ def main():
 
     # ── cells of the polygon ──────────────────────────────────────────────
     poly_ll = read_polygon(poly_arg)
-    with rasterio.open(env_dir / "elevation.tif") as ref:
-        transform, shape, crs = ref.transform, ref.shape, ref.crs
-        elev = ref.read(1)
-    poly = shapely.from_geojson(json.dumps(transform_geom("EPSG:4326", crs, json.loads(shapely.to_geojson(poly_ll)))))
-    mask = rasterize([(json.loads(shapely.to_geojson(poly)), 1)], out_shape=shape, transform=transform,
-                     fill=0, all_touched=False, dtype="uint8").astype(bool)
-    if mask.sum() == 0:  # tiny polygon: take the cell under its centre
+    grid = gridio.Grid(env_dir)
+    poly = nztm.geom_to_nztm(poly_ll)          # the grids are NZTM (EPSG:2193)
+    rows, cols = grid.cells_in(poly)
+    if len(rows) == 0:  # tiny polygon: take the cell under its centre
         c = poly.centroid
-        rr, cc = rasterio.transform.rowcol(transform, c.x, c.y)
-        mask[rr, cc] = True
-    if mask.sum() > MAX_CELLS:
-        sys.exit(f"The area is too large: {int(mask.sum()):,} ha. The limit is {MAX_CELLS:,} ha; "
+        rr, cc = grid.rowcol(c.x, c.y)
+        if not (0 <= rr < grid.shape[0] and 0 <= cc < grid.shape[1]):
+            sys.exit("The area is outside the region.")
+        rows, cols = np.array([rr]), np.array([cc])
+    if len(rows) > MAX_CELLS:
+        sys.exit(f"The area is too large: {len(rows):,} ha. The limit is {MAX_CELLS:,} ha; "
                  "split it into smaller areas.")
-    rows, cols = np.nonzero(mask)
-    cells = env_stack(env_dir, rows, cols)
+    cells = env_stack(grid, rows, cols)
     land = cells[KEY_VARS].notna().all(axis=1).to_numpy()    # drop sea and no-data cells
     if not land.any():
         sys.exit("The polygon has no land cells with environmental data.")
     if (~land).any():
         print(f"Dropped {int((~land).sum())} cells with no environmental data (sea or outside the layers).")
     rows, cols, cells = rows[land], cols[land], cells[land].reset_index(drop=True)
-    mask = np.zeros_like(mask)
-    mask[rows, cols] = True
-    region_geo = json.loads((env_dir / "region_osm_nominatim.json").read_text())[0]["geojson"]
-    inside = rasterize([(transform_geom("EPSG:4326", crs, region_geo), 1)], out_shape=shape,
-                       transform=transform, fill=0, dtype="uint8").astype(bool) & np.isfinite(elev)
-    mu, sd = region_stats(env_dir, inside)
+    mu, sd = load_region_stats(env_dir)
     Z = ((cells - mu) / sd)[VARS].to_numpy()
 
     # ── units ─────────────────────────────────────────────────────────────
@@ -318,29 +311,31 @@ def main():
             labels[valid] = best_lab
     units = sorted(set(labels))
 
-    with rasterio.open(env_dir / "lcdb_class.tif") as s:
-        lc = s.read(1)[rows, cols]
+    lc = grid.values("lcdb_class", rows, cols)
     lc_names = json.loads((env_dir / "lcdb_classes.json").read_text(encoding="utf-8"))
-    with rasterio.open(env_dir / "wetland_status.tif") as s:
-        wst = s.read(1)[rows, cols]
+    wst = grid.values("wetland_status", rows, cols)
 
-    # unit polygons for the map
-    lab_grid = np.full(shape, 255, dtype="uint8")
-    lab_grid[rows, cols] = labels
+    # unit polygons for the map: each unit's cells merged, cut to the site
+    boxes = grid.cell_boxes(rows, cols)
     feats = []
-    for geom, val in shapes(lab_grid, mask=lab_grid != 255, transform=transform):
-        g = shapely.intersection(shapely.from_geojson(json.dumps(geom)), poly)
-        g_ll = transform_geom(crs, "EPSG:4326", json.loads(shapely.to_geojson(g)))
-        feats.append({"type": "Feature", "properties": {"unit": int(val) + 1}, "geometry": g_ll})
+    for u in units:
+        g = shapely.intersection(shapely.union_all(boxes[labels == u]), poly)
+        if g.is_empty:
+            continue
+        g_ll = json.loads(shapely.to_geojson(nztm.geom_from_nztm(g)))
+        feats.append({"type": "Feature", "properties": {"unit": int(u) + 1}, "geometry": g_ll})
     (out_dir / "units.geojson").write_text(json.dumps({"type": "FeatureCollection", "features": feats}), encoding="utf-8")
 
     # ── reference records ─────────────────────────────────────────────────
-    rec = pd.read_csv(ROOT / "data" / f"records_{region}_tagged.csv.gz", low_memory=False)
+    # Read the bytes and check for gzip, since a web host may already have
+    # unzipped the file in transit.
+    raw = gridio.read_bytes(ROOT / "data" / f"records_{region}_tagged.csv.gz")
+    rec = pd.read_csv(io.BytesIO(raw), compression="gzip" if raw[:2] == GZIP else None, low_memory=False)
     # Records inside the site itself are left out: they are often plantings,
     # and they would let the prediction just repeat what is already there.
     # 100 m buffer (one grid cell) catches on-site records with GPS scatter.
-    rx, ry = rasterio.warp.transform("EPSG:4326", crs, rec["decimalLongitude"].tolist(), rec["decimalLatitude"].tolist())
-    on_site = shapely.contains_xy(poly.buffer(ON_SITE_BUFFER_M), np.asarray(rx), np.asarray(ry))
+    rx, ry = nztm.to_nztm(rec["decimalLongitude"].to_numpy(), rec["decimalLatitude"].to_numpy())
+    on_site = shapely.contains_xy(poly.buffer(ON_SITE_BUFFER_M), rx, ry)
     n_on_site = int(on_site.sum())
     rec = rec[~on_site].reset_index(drop=True)
     print(f"Left out {n_on_site} records inside the site")

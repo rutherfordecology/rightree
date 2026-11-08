@@ -201,7 +201,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
     <button id="undoPointBtn">&#x21A9; Undo point</button>
     <button id="cancelDrawBtn">&#x2715; Cancel</button>
   </div>
-  <div id="busy"><div>Predicting…</div></div>
+  <div id="busy"><div id="busyText">Predicting…</div></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -405,6 +405,20 @@ function kmlToGeoJSON(text) {
   return {type: "Feature", properties: {}, geometry: {type: "MultiPolygon", coordinates: polys}};
 }
 
+// The model runs in a Web Worker (Pyodide). It starts loading as soon as the
+// page opens, so it is usually ready by the time an area is drawn.
+const worker = new Worker("worker.js");
+let pending = null;
+worker.onmessage = e => {
+  const m = e.data;
+  if (m.type === "status") { $("#busyText").textContent = m.text === "Ready" ? "Predicting…" : m.text; return; }
+  if (!pending) return;
+  const {resolve, reject} = pending; pending = null;
+  m.type === "result" ? resolve(m.report) : reject(new Error(m.message));
+};
+worker.onerror = e => { if (pending) { pending.reject(new Error(e.message || "The model failed to load.")); pending = null; } };
+const predict = body => new Promise((resolve, reject) => { pending = {resolve, reject}; worker.postMessage({body}); });
+
 $("#run").onclick = async () => {
   finishEdit();
   const body = {name: $("#name").value, region: $("#region").value};
@@ -412,9 +426,7 @@ $("#run").onclick = async () => {
   else body.geojson = drawn.toGeoJSON();
   $("#busy").style.display = "flex"; $("#run").disabled = true; setStatus("Predicting…");
   try {
-    const r = await fetch("/api/predict", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || "Prediction failed");
+    const j = await predict(body);
     show(j); setStatus(`Done: ${j.units.length > 1 ? j.units.length + " units" : "one unit"}.`);
   } catch (err) { setStatus(err.message, true); }
   finally { $("#busy").style.display = "none"; ready(); }
@@ -608,11 +620,12 @@ function drawPlots(s) {
 }
 
 (async () => {
-  fetch("/api/credits").then(r => r.json()).then(c => { const x = Object.values(c)[0];
-    if (x && x.doi) document.querySelector("#gbifCite").innerHTML = `${esc(x.citation || "GBIF.org occurrence download")}`.replace(
-      /https:\/\/doi\.org\/\S+/, m => `<a href="${m}" target="_blank" rel="noopener">${m}</a>`); }).catch(() => {});
-  fetch("/api/version").then(r => r.json()).then(v => { if (v.version) document.querySelector("#ver").textContent = v.version; }).catch(() => {});
-  const regions = await (await fetch("/api/regions")).json();
+  const site = await (await fetch("site.json")).json();
+  const regions = site.regions;
+  if (site.version) document.querySelector("#ver").textContent = site.version;
+  const x = Object.values(regions)[0];
+  if (x && x.doi) document.querySelector("#gbifCite").innerHTML = `${esc(x.citation || "GBIF.org occurrence download")}`.replace(
+      /https:\/\/doi\.org\/\S+/, m => `<a href="${m}" target="_blank" rel="noopener">${m}</a>`);
   $("#region").innerHTML = Object.keys(regions).map(k => `<option value="${k}">${k}</option>`).join("");
   const k = Object.keys(regions)[0];
   if (k) { const rl = L.geoJSON(regions[k].geojson, {style: {color: "#263b27", weight: 1.5, dashArray: "4 4", fill: false}, interactive: false}).addTo(map);

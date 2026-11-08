@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.14.0). First predictions run; native records are tagged with environment,
+Status: prototype (v0.15.0). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
@@ -45,24 +45,28 @@ files and the but-is-it-threatened resolver).
 python scripts/serve.py
 ```
 
-Open http://127.0.0.1:7882. Draw the site (same tools as Occurd), or load a
-KML exported from Occurd, and press Predict. Distinct habitats are mapped as
-units, each with its model inputs and what sets it apart. Lists show by unit
-and stage, with species linked to LookLike. Download the species CSV or the
-units as GeoJSON.
+Builds the site into `site/` and serves it at http://127.0.0.1:7882. Draw the
+site (same tools as Occurd), or load a KML exported from Occurd, and press
+Predict. Distinct habitats are mapped as units, each with its model inputs
+and what sets it apart. Lists show by unit and stage, with species linked to
+LookLike. Download the species CSV or the units as GeoJSON.
 
-### Hosting (Hugging Face Space)
+The model runs in the browser (Pyodide, in a Web Worker), so the site is
+plain files and needs no server. The grids are cut into 256-cell tiles
+(`scripts/make_tiles.py`, rerun after the grids change) and a prediction
+downloads only the tiles under the site. The first prediction after opening
+the page also loads Python and its packages (about 30 MB, cached after).
+
+### Publishing
 
 ```bash
-python scripts/build_space.py ../rightree-space
+python scripts/build_site.py <folder>
 ```
 
-Builds a folder with the app, only the data a prediction needs (about
-60 MB: the model's grids, the tagged records, a slim names file) and a
-Dockerfile (`space/`). Push that folder to a Hugging Face Space set to the
-Docker SDK; binary files go through Git LFS. The server reads `HOST` and
-`PORT` from the environment, keeps the latest 200 runs, and refuses areas
-over 20,000 ha.
+Writes the static site (about 47 MB, mostly tiles) to `<folder>`, keeping a
+`.git` there, plus a README for a Hugging Face static Space and a
+`.gitattributes` that sends tiles and records through Git LFS. Commit and
+push the folder to publish. Areas over 20,000 ha are refused.
 
 ### From the command line
 

@@ -1,148 +1,40 @@
-"""Rightree map interface: a small web server.
-
-Serves web/index.html and runs predict.py for an area drawn on the map or
-loaded from a KML/KMZ/GeoJSON file.
-
-Runs locally by default (127.0.0.1:7882). For hosting (the Hugging Face
-Space), HOST and PORT come from the environment, and old runs are cleared out.
+"""Build the static site (scripts/build_site.py) and serve it locally.
 
 Usage:
-    python scripts/serve.py [port]        # then open http://127.0.0.1:7882
+    python scripts/serve.py [port]                  # default 7882
+
+Then open http://127.0.0.1:<port>. The model runs in the browser, so this is
+only a file server; any static host serves the same folder.
 """
-import base64
-import json
+import functools
 import os
-import re
-import secrets
-import shutil
 import subprocess
 import sys
-import threading
-import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-WEB = ROOT / "web"
-PRED = ROOT / "data" / "predictions"
-REGIONS = sorted(p.name for p in (ROOT / "data" / "env").iterdir()
-                 if (p / "region_osm_nominatim.json").exists())
-LOCK = threading.Lock()   # one prediction at a time; each loads the whole region
-KEEP_RUNS = 200           # newest runs kept on disk; older ones are deleted
-MAX_BODY = 5_000_000      # bytes: a drawn area or an uploaded KML/KMZ
-TIMEOUT_S = 300
-
-
-def slug(s):
-    s = re.sub(r"[^a-z0-9]+", "-", (s or "").lower()).strip("-")[:40]
-    return s or "site"
-
-
-def prune_runs():
-    runs = sorted((d for d in PRED.glob("*") if d.is_dir()), key=lambda d: d.stat().st_mtime, reverse=True)
-    for d in runs[KEEP_RUNS:]:
-        shutil.rmtree(d, ignore_errors=True)
-
-
-def credits():
-    """Download citation for each region's occurrence data."""
-    out = {}
-    for r in REGIONS:
-        p = ROOT / "data" / f"citation_{r}.json"
-        if p.exists():
-            c = json.loads(p.read_text(encoding="utf-8"))
-            out[r] = {"citation": c.get("citation"), "doi": c.get("doi")}
-    return out
+SITE = ROOT / "site"
 
 
 class Handler(SimpleHTTPRequestHandler):
-    def __init__(self, *a, **kw):
-        super().__init__(*a, directory=str(WEB), **kw)
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".js": "text/javascript",
+                      ".bin": "application/octet-stream", ".gz": "application/octet-stream"}
+
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
 
     def log_message(self, fmt, *args):
-        sys.stderr.write("%s\n" % (fmt % args))
-
-    def send_json(self, obj, code=200):
-        body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def do_GET(self):
-        if self.path == "/api/regions":
-            out = {}
-            for r in REGIONS:
-                hit = json.loads((ROOT / "data" / "env" / r / "region_osm_nominatim.json").read_text(encoding="utf-8"))[0]
-                out[r] = {"name": hit.get("display_name", r), "geojson": hit["geojson"]}
-            return self.send_json(out)
-        if self.path == "/api/version":
-            m = re.search(r"^## (v[\d.]+)", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)
-            return self.send_json({"version": m.group(1) if m else None})
-        if self.path == "/api/credits":
-            return self.send_json(credits())
-        # A run is only fetched by its own id, which carries a random part,
-        # so one person's site isn't visible to others.
-        m = re.fullmatch(r"/api/runs/([a-z0-9-]+)", self.path)
-        if m:
-            return self.send_run(m.group(1))
-        return super().do_GET()
-
-    def send_run(self, rid):
-        d = PRED / rid
-        if not (d / "report.json").exists():
-            return self.send_json({"error": "No such run"}, 404)
-        out = json.loads((d / "report.json").read_text(encoding="utf-8"))
-        out["id"] = rid
-        out["units_geojson"] = json.loads((d / "units.geojson").read_text(encoding="utf-8"))
-        return self.send_json(out)
-
-    def do_POST(self):
-        if self.path != "/api/predict":
-            return self.send_json({"error": "Not found"}, 404)
-        n = int(self.headers.get("Content-Length", 0))
-        if n > MAX_BODY:
-            return self.send_json({"error": "That file is too large."}, 413)
-        try:
-            req = json.loads(self.rfile.read(n))
-        except (ValueError, json.JSONDecodeError):
-            return self.send_json({"error": "Bad request"}, 400)
-        region = req.get("region") or (REGIONS[0] if REGIONS else None)
-        if region not in REGIONS:
-            return self.send_json({"error": f"Unknown region {region}"}, 400)
-        rid = f"{slug(req.get('name'))}-{time.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(4)}"
-        d = PRED / rid
-        d.mkdir(parents=True, exist_ok=True)
-        if req.get("geojson"):
-            area = d / "area.geojson"
-            area.write_text(json.dumps(req["geojson"]), encoding="utf-8")
-        elif req.get("file_b64") and req.get("file_name", "").lower().endswith((".kml", ".kmz", ".geojson", ".json")):
-            ext = Path(req["file_name"]).suffix.lower().replace(".json", ".geojson")
-            area = d / f"area{ext}"
-            area.write_bytes(base64.b64decode(req["file_b64"]))
-        else:
-            return self.send_json({"error": "Draw an area or load a KML, KMZ or GeoJSON file"}, 400)
-        with LOCK:
-            try:
-                p = subprocess.run([sys.executable, str(ROOT / "scripts" / "predict.py"), region, rid, str(area)],
-                                   capture_output=True, text=True, encoding="utf-8", errors="replace",
-                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"}, cwd=ROOT, timeout=TIMEOUT_S)
-            except subprocess.TimeoutExpired:
-                return self.send_json({"error": "The prediction took too long. Try a smaller area."}, 500)
-            prune_runs()
-        if p.returncode != 0 or not (d / "report.json").exists():
-            msg = (p.stderr.strip().splitlines() or p.stdout.strip().splitlines() or ["Prediction failed"])[-1]
-            return self.send_json({"error": msg}, 500)
-        return self.send_run(rid)
+        pass
 
 
 def main():
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "build_site.py"), str(SITE)], check=True)
     host = os.environ.get("HOST", "127.0.0.1")
     port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 7882))
-    PRED.mkdir(parents=True, exist_ok=True)
-    srv = ThreadingHTTPServer((host, port), Handler)
-    print(f"Rightree on http://{host}:{port}  (regions: {', '.join(REGIONS)})", flush=True)
+    srv = ThreadingHTTPServer((host, port), functools.partial(Handler, directory=str(SITE)))
+    print(f"Rightree on http://{host}:{port}", flush=True)
     srv.serve_forever()
 
 

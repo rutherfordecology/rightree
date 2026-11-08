@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.15.0 (November 2026)
+
+- **Runs in the browser.** Hugging Face now charges for Docker Spaces, so
+  the model moved into the page: `scripts/predict.py` runs in Pyodide in a
+  Web Worker (`web/worker.js`), and the site is plain files any static host
+  can serve. Predictions match the server version exactly on all four test
+  sites.
+- **No rasterio in the model.** The grids are read from 256-cell tiles
+  (`scripts/gridio.py`, made by `scripts/make_tiles.py`), so a prediction
+  downloads only the tiles under the site. NZTM projection is done in numpy
+  (`scripts/nztm.py`, matches PROJ to under a millimetre). Regional ranges
+  are computed once and saved to `region_stats.json`.
+- `scripts/build_site.py` builds the static site; `scripts/serve.py` now
+  builds it and serves the files. The Docker files and `build_space.py`
+  are gone.
+
 ## v0.14.0 (November 2026)
 
 - **Hostable.** `scripts/build_space.py` builds a Hugging Face Space
