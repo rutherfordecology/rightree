@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.19.1 (November 2026)
+
+- Removed the one-line description under the title in the sidebar.
+
 ## v0.19.0 (November 2026)
 
 - **Hawke's Bay.** A second region, Te Matau-a-Māui (Hawke's Bay). Visitors
