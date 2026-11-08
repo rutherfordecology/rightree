@@ -32,6 +32,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import rasterio
+import rasterio.warp
 import shapely
 from rasterio.features import rasterize, shapes
 from rasterio.warp import transform_geom
@@ -70,6 +71,12 @@ MAX_D = 0.15        # Gower distance (share of each layer's range) for a usable 
 KEY_VARS = ["temp_meanAnn", "temp_minColdMonth", "precip_ann", "distance_coast"]
 VETO = 0.25
 MIN_PLOTS = 5       # fewer close plots than this: no plot-based list for that stage
+MIN_OBS = 20        # ...and fewer close observations than this: fall back
+# Fallback when a stage has no close analogues (the flats, where little native
+# vegetation is left): nearest sites that still pass the veto, flagged.
+FALLBACK_D = 0.35
+MIN_PLOTS_FB, MIN_OBS_FB = 3, 10
+ON_SITE_BUFFER_M = 100  # records this close to the site are left out of the evidence
 NATURAL_WETLAND = {"NPS:FW Natural Wetland", "NPS Natural", "Induced"}
 
 
@@ -154,6 +161,12 @@ def dist(a, B):
     # missing key values count against the analogue
     vetoed = np.nan_to_num(diff[:, key], nan=np.inf).max(axis=1) > VETO
     return np.where(vetoed, np.inf, d)
+
+
+def within(d, limit, k):
+    """Indices of the k smallest finite distances that are <= limit."""
+    order = np.argsort(d)
+    return order[d[order] <= limit][:k]
 
 
 def clean_name(n):
@@ -246,6 +259,14 @@ def main():
 
     # ── reference records ─────────────────────────────────────────────────
     rec = pd.read_csv(ROOT / "data" / f"records_{region}_tagged.csv.gz", low_memory=False)
+    # Records inside the site itself are left out: they are often plantings,
+    # and they would let the prediction just repeat what is already there.
+    # 100 m buffer (one grid cell) catches on-site records with GPS scatter.
+    rx, ry = rasterio.warp.transform("EPSG:4326", crs, rec["decimalLongitude"].tolist(), rec["decimalLatitude"].tolist())
+    on_site = shapely.contains_xy(poly.buffer(ON_SITE_BUFFER_M), np.asarray(rx), np.asarray(ry))
+    n_on_site = int(on_site.sum())
+    rec = rec[~on_site].reset_index(drop=True)
+    print(f"Left out {n_on_site} records inside the site")
     rec["stage"] = rec["lcdb_at_record"].map(stage_of)
     renv = transform_vals(rec[[f"env_{v}" for v in VARS]].set_axis(VARS, axis=1))
     rec_Z = ((renv - mu) / sd)[VARS].to_numpy()
@@ -263,7 +284,9 @@ def main():
         return f"{c} ({s})" if c else s
 
     nvs = rec[rec["source"] == "NVS"]
-    visits = nvs.groupby("visit").agg(stage=("stage", "first"), idx=("stage", lambda s: s.index[0]))
+    visits = nvs.groupby("visit").agg(stage=("stage", "first"), idx=("stage", lambda s: s.index[0]),
+                                      lat=("decimalLatitude", "first"), lon=("decimalLongitude", "first"),
+                                      year=("year", "first"))
     visit_Z = rec_Z[visits["idx"].to_numpy()]
     visit_species = nvs.groupby("visit")["name"].agg(set)
     # typical NN spread among plots, to judge how close a unit's analogues are
@@ -272,7 +295,8 @@ def main():
 
     rows_out, report = [], [f"# Rightree prediction: {site}", "",
                             f"Region data: {region}. Natives only. Plots: NVS via GBIF; "
-                            f"observations: iNaturalist and herbaria.", ""]
+                            f"observations: iNaturalist and herbaria. {n_on_site} records in or within "
+                            f"{ON_SITE_BUFFER_M} m of the site were left out, so existing plantings don't drive the list.", ""]
     for u in units:
         m = labels == u
         zc = np.nanmedian(Z[m], axis=0)
@@ -287,31 +311,46 @@ def main():
         for stage in STAGES:
             sel = (visits["stage"] == stage).to_numpy()
             d = dist(zc, visit_Z[sel])
-            order = np.argsort(d)
-            close = order[d[order] <= MAX_D][:K_PLOTS]
-            near = visits.index[sel][close]
-            n_plots = len(near)
-            freq = (pd.Series([s for v in near for s in visit_species[v]], dtype=object).value_counts() / n_plots
-                    if n_plots >= MIN_PLOTS else pd.Series(dtype=float))
-
             osel = (obs["stage"] == stage).to_numpy()
             od = dist(zc, rec_Z[obs.index[osel]])
-            oorder = np.argsort(od)
-            oclose = oorder[od[oorder] <= MAX_D][:K_OBS]
-            onear = obs[osel].iloc[oclose]
+
+            # Tier 1: close analogues. Tier 2 (fallback): best available within
+            # FALLBACK_D that still pass the veto, flagged in the report.
+            tier = "close"
+            pi, oi = within(d, MAX_D, K_PLOTS), within(od, MAX_D, K_OBS)
+            if len(pi) < MIN_PLOTS and len(oi) < MIN_OBS:
+                tier = "best available"
+                pi, oi = within(d, FALLBACK_D, K_PLOTS), within(od, FALLBACK_D, K_OBS)
+            limit = MAX_D if tier == "close" else FALLBACK_D
+            min_p = MIN_PLOTS if tier == "close" else MIN_PLOTS_FB
+            min_o = MIN_OBS if tier == "close" else MIN_OBS_FB
+            near = visits.index[sel][pi]
+            n_plots = len(near)
+            freq = (pd.Series([s for v in near for s in visit_species[v]], dtype=object).value_counts() / n_plots
+                    if n_plots >= min_p else pd.Series(dtype=float))
+            onear = obs[osel].iloc[oi]
             oshare = onear["name"].value_counts() / max(len(onear), 1)
 
             fin = d[np.isfinite(d)]
             nearest = float(fin.min()) if len(fin) else np.nan
-            report.append(f"### {stage}")
             near_txt = f"nearest {nearest:.2f}" if np.isfinite(nearest) else "none pass the climate/coast veto"
-            report.append(f"- Evidence: {n_plots} NVS plots within distance {MAX_D} "
-                          f"({near_txt}); {len(onear)} observations within {MAX_D}")
-            if n_plots < MIN_PLOTS and len(onear) < 20:
-                report += ["- **Not enough similar sites for a list.**", ""]
+            report.append(f"### {stage}" + (" (best available, not close matches)" if tier != "close" else ""))
+            report.append(f"- Evidence: {n_plots} NVS plots within distance {limit} "
+                          f"({near_txt}); {len(onear)} observations within {limit}")
+            if n_plots < min_p and len(onear) < min_o:
+                report += ["- **Not enough similar sites for a list, even allowing weaker matches.**", ""]
                 continue
-            if n_plots < MIN_PLOTS:
-                report.append(f"- Fewer than {MIN_PLOTS} close plots: list from observations only, "
+            if tier != "close":
+                report.append(f"- **No close matches (within {MAX_D}).** These are the nearest sites that "
+                              f"still pass the climate/coast veto, up to {FALLBACK_D}. Treat as a lead to "
+                              "check, not a prediction.")
+                if n_plots:
+                    pl = visits.loc[near].assign(d=d[pi]).drop_duplicates(["lat", "lon"]).head(5)
+                    report.append("- Plots used: " + "; ".join(
+                        f"{r.lat:.4f}, {r.lon:.4f} ({int(r.year) if pd.notna(r.year) else '?'}, distance {r.d:.2f})"
+                        for r in pl.itertuples()))
+            if n_plots < min_p:
+                report.append(f"- Fewer than {min_p} plots: list from observations only, "
                               "so it shows what people have recorded, not what is absent.")
             spp = sorted(set(freq.index) | set(oshare.index))
             tab = pd.DataFrame({"plot_freq": freq.reindex(spp), "obs_share": oshare.reindex(spp)}).fillna(0)
@@ -322,27 +361,35 @@ def main():
                 for s, r in tab.head(25).iterrows()))
             report.append("")
             for s, r in tab.iterrows():
-                rows_out.append({"unit": u + 1, "stage": stage, "species": s, "common_name": common.get(s),
-                                 "plot_freq": round(r.plot_freq, 3), "n_plots": n_plots,
-                                 "obs_share": round(r.obs_share, 3), "n_obs": len(onear),
+                rows_out.append({"unit": u + 1, "stage": stage, "tier": tier, "species": s,
+                                 "common_name": common.get(s), "plot_freq": round(r.plot_freq, 3),
+                                 "n_plots": n_plots, "obs_share": round(r.obs_share, 3), "n_obs": len(onear),
                                  "nearest_plot_distance": round(nearest, 3)})
 
         if has_wl:
             wsel = nat_wl.to_numpy()
             wd = dist(zc, rec_Z[rec.index[wsel]])
-            worder = np.argsort(wd)
-            wnear = rec[wsel].iloc[worder[wd[worder] <= MAX_D][:K_OBS]]
-            report += ["### Wetland (records inside natural GDC wetlands at similar sites)",
-                       f"- Evidence: {len(wnear)} records within distance {MAX_D}"]
+            tier = "close"
+            wi = within(wd, MAX_D, K_OBS)
+            if len(wi) < 10:
+                tier, wi = "best available", within(wd, FALLBACK_D, K_OBS)
+            wnear = rec[wsel].iloc[wi]
+            limit = MAX_D if tier == "close" else FALLBACK_D
+            report += ["### Wetland (records inside natural GDC wetlands at similar sites)"
+                       + (" (best available, not close matches)" if tier != "close" else ""),
+                       f"- Evidence: {len(wnear)} records within distance {limit}"]
             if len(wnear) >= 10:
+                if tier != "close":
+                    report.append(f"- **No close matches (within {MAX_D}).** Nearest natural-wetland records "
+                                  f"up to {FALLBACK_D}; treat as a lead to check.")
                 wshare = wnear["name"].value_counts() / len(wnear)
                 report.append("- Most recorded: " + ", ".join(f"{label(s)} {v:.0%}" for s, v in wshare.head(20).items()))
                 for s, v in wshare.items():
-                    rows_out.append({"unit": u + 1, "stage": "Wetland", "species": s, "common_name": common.get(s),
-                                     "plot_freq": 0, "n_plots": 0, "obs_share": round(v, 3), "n_obs": len(wnear),
-                                     "nearest_plot_distance": np.nan})
+                    rows_out.append({"unit": u + 1, "stage": "Wetland", "tier": tier, "species": s,
+                                     "common_name": common.get(s), "plot_freq": 0, "n_plots": 0,
+                                     "obs_share": round(v, 3), "n_obs": len(wnear), "nearest_plot_distance": np.nan})
             else:
-                report.append("- **Not enough similar wetland records for a list.**")
+                report.append("- **Not enough similar wetland records for a list, even allowing weaker matches.**")
             report.append("")
 
     sp = pd.DataFrame(rows_out)

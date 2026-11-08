@@ -1,0 +1,6 @@
+{
+  "_note": "Check sites for predict.py (Gisborne). Run: python scripts/predict.py tairawhiti <name> \"<wkt>\"",
+  "test-flats": "POLYGON((177.90 -38.60, 177.925 -38.60, 177.925 -38.58, 177.90 -38.58, 177.90 -38.60))",
+  "test-ranges": "POLYGON((177.28 -38.60, 177.31 -38.60, 177.31 -38.575, 177.28 -38.575, 177.28 -38.60))",
+  "test-coast": "POLYGON((178.03 -38.685, 178.06 -38.685, 178.06 -38.665, 178.03 -38.665, 178.03 -38.685))"
+}

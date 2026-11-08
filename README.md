@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.6.0). First predictions run; native records are tagged with environment,
+Status: prototype (v0.7.0). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
@@ -63,6 +63,11 @@ Writes `report.md`, `species.csv` and `units.geojson` to
    evidence. Observation share is the same from iNaturalist and herbarium
    records, which are presence-only. A unit with a natural GDC wetland also
    gets a wetland list. Where evidence is too thin, the report says so.
+5. **Fallback.** If a stage has no close sites, the report shows the nearest
+   ones that still pass the veto (up to 0.35), headed "best available, not
+   close matches", with where and when those plots were. Treat these as leads.
+   Records in or within 100 m of the site are always left out, so existing
+   plantings don't feed back into the list.
 
 Still to come: geology (QMAP), Ecological District limits, and a wider
 analogue pool beyond the region.

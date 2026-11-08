@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.7.0 (November 2026)
+
+- **Best-available fallback.** If a stage has fewer than 5 close plots
+  (within 0.15) and fewer than 20 close observations, `predict.py` falls back
+  to the nearest sites up to 0.35 that still pass the climate/coast veto. It
+  then needs at least 3 plots or 10 observations. The heading reads "best
+  available, not close matches", and the report lists the plots used with
+  location, year and distance. `species.csv` has a new `tier` column
+  (`close` / `best available`). The wetland list falls back the same way.
+- **On-site records left out.** Records in the site, or within 100 m of it,
+  are dropped from the evidence. They are often plantings, and keeping them
+  would make the prediction repeat what is already there. The report gives
+  the count.
+- `config/test_sites.json` holds the check polygons (flats, ranges, coast).
+  Close-match lists for the flats and ranges are unchanged.
+- Test on a real site (an orchard on young alluvium near the Waipaoa, 1.5 km
+  from the coast): still no forest or scrub list, even at 0.35. Only a
+  saltmarsh-leaning wetland lead. The Gisborne flats have almost no native
+  analogues left on similar soils, so this needs a wider analogue pool.
+
 ## v0.6.1 (November 2026)
 
 - `predict.py` reads KML and KMZ as well as GeoJSON and WKT, so an area drawn

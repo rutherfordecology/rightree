@@ -121,6 +121,12 @@ For each unit:
 - an export for `projects/<job>/data/` (CSV with a GBIF download DOI citation,
   plus units as GeoJSON/KML)
 
+## Fallback and on-site records (v0.7.0)
+
+Close analogues are within Gower 0.15. When a stage has none, the nearest sites up to 0.35 that pass the veto are used and flagged "best available". The cut-off is a judgement call: 0.35 still finds lowland alluvial forest plots for the flats, but on the user's orchard site by the Waipaoa it found only 1 forest plot. The flats have lost their native vegetation, so the region alone has too few analogues. The fix is a wider pool (Hawke's Bay, Bay of Plenty), not a looser threshold.
+
+Records in or within 100 m of the site are dropped. On-site iNat records (cabbage tree, karo, wharangi, mānuka) were likely plantings, and 4 of them sat just outside the drawn line.
+
 ## Plan
 
 1. **Prototype (Python notebook), one region:** build the grid, attach the
