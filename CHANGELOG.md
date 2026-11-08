@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.18.0 (November 2026)
+
+- **Two-column checklist.** The Word checklist now lists species in two
+  columns per page, each row a tick box, Māori name, common name and
+  scientific name, under a heading per layer. Expected species are marked
+  ● and listed first; † marks threatened or at-risk species. A common name
+  that only repeats the Māori one (pokaka / pōkākā) is left blank. Likelihood,
+  stage, unit and notes columns are gone to make room.
+- `report.json` and `species.csv` gain `maori_name` and `english_name`
+  (from NZTCS), alongside `common_name` (Māori if there is one).
+
 ## v0.17.1 (November 2026)
 
 - **Unit labels sit inside their unit.** A unit made of scattered patches was

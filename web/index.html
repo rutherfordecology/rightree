@@ -484,7 +484,7 @@ function save(text, name, type) {
   a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click();
 }
 $("#dlCsv").onclick = () => {
-  const cols = ["unit", "stage", "tier", "common_name", "species", "likelihood", "plot_freq", "n_plots", "obs_share", "n_obs",
+  const cols = ["unit", "stage", "tier", "common_name", "maori_name", "english_name", "species", "likelihood", "plot_freq", "n_plots", "obs_share", "n_obs",
                 "growth_form", "layers", "category", "bioStatus"];
   const rowsOut = current.species.map(s => ({...s, likelihood: likelihood(s, stageOf(s, current))}));
   const cell = v => { v = v ?? ""; return /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v; };
@@ -530,80 +530,97 @@ const loadDocx = () => docxLib || (docxLib = new Promise((resolve, reject) => {
 async function checklistDocx(j) {
   const D = await loadDocx();
   const {Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle,
-         AlignmentType, PageNumber, Footer, LevelFormat} = D;
+         AlignmentType, PageNumber, Footer, LevelFormat, SectionType} = D;
   const {groups, n} = checklistData(j);
-  const multi = j.units.length > 1, order = ["M", "R", "O", "W"];
+  const multi = j.units.length > 1;
   const site = document.querySelector("#name").value.trim() || j.site || "Site";
   const ha = j.units.reduce((a, u) => a + u.ha, 0);
   const today = new Date().toLocaleDateString("en-NZ", {day: "numeric", month: "long", year: "numeric"});
   const FONT = "Arial", SLATE = "263B27", GREY = "5F6B66";
-  const run = (text, o = {}) => new TextRun({text, font: FONT, size: o.size || 18, bold: o.bold, italics: o.italics, color: o.color});
+  const run = (text, o = {}) => new TextRun({text, font: FONT, size: o.size || 16, bold: o.bold, italics: o.italics, color: o.color});
   const para = (runs, o = {}) => new Paragraph({children: Array.isArray(runs) ? runs : [runs], spacing: {before: 0, after: o.after ?? 60}, ...(o.p || {})});
-  // A4 with 15 mm margins: 11906 - 2 * 850 = 10206 twips of text width
-  const W = 10206;
-  const cols = multi ? [420, 3200, 1050, 750, 900, 1400, 2486] : [420, 3500, 1100, 800, 1500, 2886];
-  const heads = multi ? ["", "Species", "Likelihood", "Stage", "Unit", "Threat status", "Notes"]
-                      : ["", "Species", "Likelihood", "Stage", "Threat status", "Notes"];
   const none = {style: BorderStyle.NONE, size: 0, color: "FFFFFF"};
-  const borders = {top: none, left: none, right: none, bottom: {style: BorderStyle.SINGLE, size: 4, color: "BBBBBB"}};
-  const margins = {top: 50, bottom: 50, left: 80, right: 80};
+  // A4 with 12 mm margins: 11906 - 2 * 680 = 10546 twips; two columns 300 apart
+  const PAGE_M = 680, GAP = 300, W = 11906 - 2 * PAGE_M, CW = Math.floor((W - GAP) / 2);
+  // Column widths inside one page column: tick box, Māori, common, Latin
+  const cols = [300, 1380, 1380, CW - 300 - 1380 - 1380];
+  const line = {style: BorderStyle.SINGLE, size: 2, color: "C8C8C8"};
+  const borders = {top: none, left: none, right: none, bottom: line};
+  const margins = {top: 25, bottom: 25, left: 50, right: 50};
   const cell = (children, w, o = {}) => new TableCell({children, width: {size: w, type: WidthType.DXA}, borders, margins, ...o});
-  const rows = [new TableRow({tableHeader: true, children: heads.map((h, i) => cell([para(run(h, {bold: true, size: 16}), {after: 0})], cols[i],
-    {borders: {...borders, bottom: {style: BorderStyle.SINGLE, size: 12, color: SLATE}}}))})];
+  const txt = (s, o, keep) => [para(run(s || "", o), {after: 0, p: keep ? {keepNext: true} : {}})];
+  // Same name apart from case and macrons (pokaka / pōkākā) counts as a repeat
+  const plain = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+  // One table per layer: a shaded title row, a small heading row, then species.
+  const tables = [];
   for (const g of groups) {
-    rows.push(new TableRow({cantSplit: true, children: [cell(
-      [para([run(g.name + " ", {bold: true, color: "FFFFFF"}), run("(" + g.list.length + ")", {color: "FFFFFF"})], {after: 0})],
-      W, {columnSpan: cols.length, shading: {type: ShadingType.CLEAR, color: "auto", fill: SLATE}})]}));
+    const rows = [
+      new TableRow({cantSplit: true, children: [cell([para([run(g.name + " ", {bold: true, color: "FFFFFF", size: 17}),
+        run("(" + g.list.length + ")", {color: "FFFFFF", size: 17})], {after: 0, p: {keepNext: true}})], CW,
+        {columnSpan: 4, shading: {type: ShadingType.CLEAR, color: "auto", fill: SLATE}})]}),
+      new TableRow({cantSplit: true, children: ["", "Māori", "Common", "Scientific"].map((h, i) =>
+        cell(txt(h, {bold: true, size: 14, color: GREY}, true), cols[i]))}),
+    ];
     for (const e of g.list) {
       const r = e.r;
-      const name = r.common_name ? [para(run(r.common_name, {bold: true}), {after: 0}), para(run(r.species, {italics: true}), {after: 0})]
-                                 : [para(run(r.species, {italics: true}), {after: 0})];
-      const vals = [[para(run("☐", {size: 24}), {after: 0})], name, [para(run(e.lk), {after: 0})],
-        [para(run(order.filter(c => e.stages.has(c)).join(" ")), {after: 0})]];
-      if (multi) vals.push([para(run([...e.units].sort().join(", ")), {after: 0})]);
-      vals.push([para(run(THREAT(r.category) ? r.category : ""), {after: 0})], [para(run(""), {after: 0})]);
-      rows.push(new TableRow({cantSplit: true, children: vals.map((v, i) => cell(v, cols[i]))}));
+      const maori = r.maori_name || "";
+      const english = r.english_name && plain(r.english_name) !== plain(r.maori_name) ? r.english_name : "";
+      const sci = [run(r.species, {italics: true})];
+      if (e.lk === "Expected") sci.push(run(" ●", {color: SLATE, size: 12}));
+      if (THREAT(r.category)) sci.push(run(" †", {bold: true}));
+      rows.push(new TableRow({cantSplit: true, children: [
+        cell(txt("☐", {size: 20}), cols[0]), cell(txt(maori), cols[1]), cell(txt(english), cols[2]),
+        cell([para(sci, {after: 0})], cols[3])]}));
     }
+    tables.push(new Table({width: {size: CW, type: WidthType.DXA}, columnWidths: cols, rows}),
+                para(run(""), {after: 80}));
   }
+
   const unitText = u => (multi ? "Unit " + u.unit + ": " : "") + u.ha.toLocaleString() + " ha, " + u.temp + " °C mean, " +
     u.rain.toLocaleString() + " mm rain, slope " + u.slope + "°. Now: " +
     Object.entries(u.covers).map(([k, v]) => k + " " + Math.round(v * 100) + "%").join(", ") + "." +
     ((u.potential || []).length ? " Naturally: " + u.potential.map(p => p.name + " " + Math.round(p.share * 100) + "%").join(", ") + "." : "");
-  const unitLines = j.units.map(u => para(run(unitText(u)), {p: {numbering: {reference: "units", level: 0}}}));
-  const blankCell = t => new TableCell({width: {size: 3402, type: WidthType.DXA}, margins: {top: 200, bottom: 40, left: 0, right: 200},
+  const blankCell = t => new TableCell({width: {size: Math.floor(W / 3), type: WidthType.DXA}, margins: {top: 180, bottom: 40, left: 0, right: 200},
     borders: {top: none, left: none, right: none, bottom: {style: BorderStyle.SINGLE, size: 4, color: "999999"}},
-    children: [para(run(t, {color: GREY}), {after: 0})]});
-  const blanks = new Table({width: {size: W, type: WidthType.DXA}, columnWidths: [3402, 3402, 3402],
+    children: [para(run(t, {color: GREY, size: 18}), {after: 0})]});
+  const third = Math.floor(W / 3);
+  const blanks = new Table({width: {size: third * 3, type: WidthType.DXA}, columnWidths: [third, third, third],
     rows: [new TableRow({children: ["Surveyor", "Date", "Weather"].map(blankCell)})]});
-  const key = [run("Native species expected at the site, from where they grow in environmentally similar places nearby. ", {color: GREY}),
-    run("Expected", {bold: true, color: GREY}), run(": in 40%+ of similar survey plots. ", {color: GREY}),
-    run("Likely", {bold: true, color: GREY}), run(": in 15%+ of plots, or 3+ records. ", {color: GREY})];
-  if (showPossible) key.push(run("Possible", {bold: true, color: GREY}), run(": a single plot or one or two records. ", {color: GREY}));
-  key.push(run("Stage: M mature forest, R regenerating, O open ground, W wetland.", {color: GREY}));
+  const g = {color: GREY, size: 16};
+  const key = [run("Native species expected at the site, from where they grow in environmentally similar places nearby. ", g),
+    run("Within each layer, expected species (", g), run("●", {color: SLATE, size: 12}),
+    run(": in 40%+ of similar survey plots) come first, then likely ones (15%+ of plots, or 3+ records)", g),
+    run(showPossible ? ", then possible ones. " : ". ", g),
+    run("†", {bold: true, size: 16}), run(" threatened or at risk (NZTCS).", g)];
+  const page = {size: {width: 11906, height: 16838}, margin: {top: PAGE_M, bottom: PAGE_M, left: PAGE_M, right: PAGE_M}};
+  const footer = new Footer({children: [new Paragraph({alignment: AlignmentType.RIGHT, children: [
+    run("Rightree plant checklist: " + site + " · page ", {size: 14, color: GREY}),
+    new TextRun({children: [PageNumber.CURRENT], font: FONT, size: 14, color: GREY})]})]});
   const doc = new Document({
     creator: "Rightree", title: "Plant checklist: " + site,
-    styles: {default: {document: {run: {font: FONT, size: 18}}}},
+    styles: {default: {document: {run: {font: FONT, size: 16}}}},
     numbering: {config: [{reference: "units", levels: [{level: 0, format: LevelFormat.BULLET, text: "•", alignment: AlignmentType.LEFT,
       style: {paragraph: {indent: {left: 360, hanging: 240}}}}]}]},
-    sections: [{
-      properties: {page: {size: {width: 11906, height: 16838}, margin: {top: 850, bottom: 850, left: 850, right: 850}}},
-      footers: {default: new Footer({children: [new Paragraph({alignment: AlignmentType.RIGHT, children: [
-        run("Rightree plant checklist: " + site + " · page ", {size: 14, color: GREY}),
-        new TextRun({children: [PageNumber.CURRENT], font: FONT, size: 14, color: GREY})]})]})},
-      children: [
-        para(run("Plant checklist: " + site, {bold: true, size: 32, color: SLATE}), {after: 40}),
+    sections: [
+      {properties: {page}, footers: {default: footer}, children: [
+        para(run("Plant checklist: " + site, {bold: true, size: 30, color: SLATE}), {after: 30}),
         para(run("Rightree " + document.querySelector("#ver").textContent + " · made " + today + " · " + ha.toLocaleString() +
-                 " ha · " + n + " species", {color: GREY}), {after: 120}),
+                 " ha · " + n + " species", {color: GREY, size: 17}), {after: 80}),
         blanks,
-        para(run(""), {after: 60}),
-        ...unitLines,
-        para(key, {after: 160}),
-        new Table({width: {size: W, type: WidthType.DXA}, columnWidths: cols, rows}),
-        para(run("A starting list to check on the ground, not a survey. Species records: GBIF.org (NVS, iNaturalist NZ, NZ herbaria); " +
-          "environment: NZEnvDS v1.1; land cover: LCDB v6; wetlands: GDC 2022; potential ecosystems: Eco-index Ecosystem Projector " +
-          "(CC BY 4.0); names and threat status: NZTCS. Rightree by Rutherford Ecology.", {size: 15, color: GREY}), {p: {spacing: {before: 200, after: 0}}}),
-      ],
-    }],
+        para(run(""), {after: 40}),
+        ...j.units.map(u => para(run(unitText(u)), {after: 30, p: {numbering: {reference: "units", level: 0}}})),
+        para(key, {after: 120, p: {spacing: {before: 60, after: 120}}}),
+      ]},
+      // Species in two newspaper columns, continuing on the same page
+      {properties: {type: SectionType.CONTINUOUS, page, column: {count: 2, space: GAP, equalWidth: true}},
+       footers: {default: footer}, children: [
+        ...tables,
+        para(run("A starting list to check on the ground, not a survey. Records: GBIF.org (NVS, iNaturalist NZ, NZ herbaria); " +
+          "environment: NZEnvDS v1.1; land cover: LCDB v6; wetlands as credited on the map page; potential ecosystems: Eco-index " +
+          "Ecosystem Projector (CC BY 4.0); names: NZTCS. Rightree by Rutherford Ecology.", {size: 13, color: GREY}), {after: 0}),
+      ]},
+    ],
   });
   return Packer.toBlob(doc);
 }
