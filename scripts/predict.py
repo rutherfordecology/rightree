@@ -395,7 +395,7 @@ def main():
     nvs = rec[rec["source"] == "NVS"]
     visits = nvs.groupby("visit").agg(stage=("stage", "first"), idx=("stage", lambda s: s.index[0]),
                                       lat=("decimalLatitude", "first"), lon=("decimalLongitude", "first"),
-                                      year=("year", "first"))
+                                      year=("year", "first"), gbif=("gbifID", "first"))
     visit_Z = rec_Z[visits["idx"].to_numpy()]
     visit_species = nvs.groupby("visit")["name"].agg(set)
     gf = load_growth_forms()
@@ -403,6 +403,21 @@ def main():
     print(f"Re-staged {n_restaged} NVS plots from what they recorded (LCDB said open or excluded cover)")
     # typical NN spread among plots, to judge how close a unit's analogues are
     obs = rec[rec["source"] != "NVS"].copy()
+
+    # Evidence for the map: every plot and record a stage's list came from,
+    # at GBIF's published coordinates, with a GBIF record to open.
+    def yr(v):
+        return int(v) if pd.notna(v) else None
+
+    def plot_points(near, dd):
+        pl = visits.loc[near].assign(d=dd)
+        return [{"lat": round(float(r.lat), 5), "lon": round(float(r.lon), 5), "year": yr(r.year), "d": round(float(r.d), 3),
+                 "n": len(visit_species.get(v, ())), "gbif": yr(r.gbif)} for v, r in zip(pl.index, pl.itertuples())]
+
+    def obs_points(df, dd):
+        return [{"lat": round(float(r.decimalLatitude), 5), "lon": round(float(r.decimalLongitude), 5), "name": r.name,
+                 "year": yr(r.year), "source": r.source, "d": round(float(x), 3), "gbif": yr(r.gbifID)}
+                for r, x in zip(df.itertuples(), dd)]
     # Open-ground observations: drop those at a bush edge (likely in an
     # unmapped remnant) and forest-only plants (a lone record of a forest fern
     # in "pasture" says nothing about what colonises open ground).
@@ -483,7 +498,8 @@ def main():
             report.append(f"### {stage}" + (" (best available, not close matches)" if tier != "close" else ""))
             meta = {"unit": u + 1, "stage": stage, "tier": tier, "limit": limit, "n_plots": int(n_plots),
                     "n_obs": int(len(onear)), "nearest": None if not np.isfinite(nearest) else round(nearest, 3),
-                    "enough": True, "obs_only": False, "plots_used": []}
+                    "enough": True, "obs_only": False,
+                    "plots_used": plot_points(near, d[pi]), "obs_used": obs_points(onear, od[oi])}
             stages_meta.append(meta)
             report.append(f"- Evidence: {n_plots} NVS plots within distance {limit} "
                           f"({near_txt}); {len(onear)} observations within {limit}")
@@ -497,8 +513,6 @@ def main():
                               "check, not a prediction.")
                 if n_plots:
                     pl = visits.loc[near].assign(d=d[pi]).drop_duplicates(["lat", "lon"]).head(5)
-                    meta["plots_used"] = [{"lat": r.lat, "lon": r.lon, "year": int(r.year) if pd.notna(r.year) else None,
-                                           "d": round(r.d, 3)} for r in pl.itertuples()]
                     report.append("- Plots used: " + "; ".join(
                         f"{r.lat:.4f}, {r.lon:.4f} ({int(r.year) if pd.notna(r.year) else '?'}, distance {r.d:.2f})"
                         for r in pl.itertuples()))
@@ -532,7 +546,7 @@ def main():
             limit = MAX_D if tier == "close" else FALLBACK_D
             stages_meta.append({"unit": u + 1, "stage": "Wetland", "tier": tier, "limit": limit, "n_plots": 0,
                                 "n_obs": int(len(wnear)), "nearest": None, "enough": len(wnear) >= 10,
-                                "obs_only": True, "plots_used": []})
+                                "obs_only": True, "plots_used": [], "obs_used": obs_points(wnear, wd[wi])})
             report += ["### Wetland (records inside natural GDC wetlands at similar sites)"
                        + (" (best available, not close matches)" if tier != "close" else ""),
                        f"- Evidence: {len(wnear)} records within distance {limit}"]
