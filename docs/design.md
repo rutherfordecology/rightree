@@ -51,6 +51,15 @@ NZEnvDS has no geology, so QMAP is still to add. The soil layers are ordinal
 classes, not measurements, so treat them as ordinal in the distance measure.
 Land cover (LCDB) is also still to add.
 
+**Wetlands (v0.3.0): GDC Regional Wetland Assessment 2022 (Morphum)**, CC BY
+4.0. This is a desktop assessment from aerial imagery and LiDAR, not
+field-verified; each polygon has a confidence rating. Its description lists
+six catchments (Waipaoa, Waiapu, Hangaroa-Ruakituri, Uawa, Waimata,
+Wharekahika-Waikura), so the rest of the region may be unmapped rather than
+dry. Check this before treating "no wetland" as an absence. It covers
+Gisborne only, so a wider analogue pool will need another source outside the
+region (for example the national wetland layers or LCDB's wetland classes).
+
 ## Occurrence data
 
 - **GBIF:** presence-only. Filter to coordinate uncertainty of 100 m or

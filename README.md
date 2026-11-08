@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.2.0). Occurrence data and environmental layers load;
+Status: prototype (v0.3.0). Occurrence data, environmental layers and wetlands load;
 nothing predicts yet. See [`docs/design.md`](docs/design.md).
 
 ## Loading occurrence data

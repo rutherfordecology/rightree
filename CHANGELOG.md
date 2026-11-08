@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.0 (November 2026)
+
+- Wetlands from Gisborne District Council's Regional Wetland Assessment 2022
+  (Morphum; CC BY 4.0): 3,542 polygons, classified by NPS-FM and Johnson &
+  Gerbeaux wetland types. `scripts/fetch_gdc_wetlands.py` keeps the polygons
+  and adds three grid layers: wetland class, wetland status (natural,
+  induced, pasture, artificial) and distance to the nearest natural wetland.
+  Cells outside the region are no data, because GDC only maps its own region.
+- First check: 571 records (318 species) fall in wetland cells, including
+  kahikatea, saltmarsh ribbonwood and cabbage tree. A 100 m cell that only
+  touches a wetland edge also counts, so record tagging should use the
+  polygons.
+
 ## v0.2.0 (November 2026)
 
 - Environmental layers. `scripts/fetch_env.py` pulls 23 NZEnvDS v1.1 layers
