@@ -1,0 +1,8 @@
+# Raw and derived spatial data are large and some are licensed
+data/
+*.tif
+*.gpkg
+*.zip
+.ipynb_checkpoints/
+__pycache__/
+.venv/
