@@ -22,7 +22,7 @@
    separately.
 
 Usage:
-    python scripts/predict.py tairawhiti <site-name> <polygon.geojson | WKT in lon/lat>
+    python scripts/predict.py tairawhiti <site-name> <polygon.kml|.kmz|.geojson | WKT in lon/lat>
 Writes data/predictions/<site-name>/: report.md, species.csv, units.geojson
 """
 import json
@@ -84,8 +84,34 @@ def transform_vals(df):
     return out
 
 
+def read_kml(text):
+    """Union of every Polygon in a KML (e.g. an Occurd area export), holes kept."""
+    import xml.etree.ElementTree as ET
+    root = ET.fromstring(text)
+    local = lambda el: el.tag.rsplit("}", 1)[-1]
+
+    def ring(el):
+        coords = next(e for e in el.iter() if local(e) == "coordinates")
+        return [tuple(map(float, c.split(",")[:2])) for c in coords.text.split()]
+
+    polys = []
+    for pg in (e for e in root.iter() if local(e) == "Polygon"):
+        outer = [ring(c) for c in pg if local(c) == "outerBoundaryIs"][0]
+        holes = [ring(c) for c in pg if local(c) == "innerBoundaryIs"]
+        polys.append(shapely.Polygon(outer, holes))
+    if not polys:
+        sys.exit("No polygons found in the KML.")
+    return shapely.make_valid(shapely.union_all(polys))
+
+
 def read_polygon(arg):
     p = Path(arg)
+    if p.exists() and p.suffix.lower() == ".kml":
+        return read_kml(p.read_bytes())
+    if p.exists() and p.suffix.lower() == ".kmz":
+        import zipfile
+        with zipfile.ZipFile(p) as z:
+            return read_kml(z.read(next(n for n in z.namelist() if n.endswith(".kml"))))
     if p.exists():
         gj = json.loads(p.read_text(encoding="utf-8"))
         geoms = [f["geometry"] for f in gj["features"]] if gj.get("type") == "FeatureCollection" else [gj.get("geometry", gj)]

@@ -40,7 +40,7 @@ files and the but-is-it-threatened resolver).
 ## Predicting a site
 
 ```bash
-python scripts/predict.py <region> <site-name> <polygon.geojson | "POLYGON((lon lat, ...))">
+python scripts/predict.py <region> <site-name> <area.kml | .kmz | .geojson | "POLYGON((lon lat, ...))">
 ```
 
 Writes `report.md`, `species.csv` and `units.geojson` to

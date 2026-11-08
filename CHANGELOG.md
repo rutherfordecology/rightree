@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.1 (November 2026)
+
+- `predict.py` reads KML and KMZ as well as GeoJSON and WKT, so an area drawn
+  in Occurd and exported with its KML button can be used directly. Several
+  polygons are merged, and holes are kept.
+
 ## v0.6.0 (November 2026)
 
 - First predictions. `scripts/predict.py <region> <site> <polygon>` splits
