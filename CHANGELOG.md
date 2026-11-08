@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.13.0 (November 2026)
+
+- **Layers.** Each species gets the layers it can fill: canopy, subcanopy,
+  understorey, ground cover, and climber or epiphyte. They come from its
+  growth form (`layer_of_form` in `config/growth_forms.json`), with 31
+  genus or species overrides where a plant commonly fills more than one.
+  Kānuka, māhoe and karaka are canopy and subcanopy; tree ferns are
+  subcanopy and understorey. `species.csv` gains `growth_form` and `layers`.
+- **Map page:**
+  - Species tables have a tick column for each layer.
+  - Filter buttons (All layers, Canopy, Subcanopy, Understorey, Ground
+    cover, Climbers & epiphytes) apply to every list. A filtered list shows
+    every match, not just the top 25.
+- **Likelihood.** Each species is marked:
+  - **Expected:** in 40% or more of the similar plots (at least 2).
+  - **Likely:** in 15% or more of the plots (at least 2), or 3 or more
+    records.
+  - **Possible:** a single plot, or one or two records.
+
+  Possible species are hidden unless "Show possible" is ticked, which takes
+  out the long tail of one-off species. Waimata's regenerating list drops
+  from 48 to 17. The downloaded CSV includes likelihood, growth form and
+  layers.
+- The sidebar is wider (540 px) to fit the new columns.
+
 ## v0.12.2 (November 2026)
 
 - Removed "(opens in LookLike)" from the species table heading.

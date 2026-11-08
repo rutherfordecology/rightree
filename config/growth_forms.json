@@ -1,98 +1,1185 @@
 {
-  "_note": "Growth form and usual habitat of each native genus in the Gisborne records, set by hand (NZTCS has no growth form). habitat: forest = forest interior or understorey; both = forest and open or scrub (pioneers, edge species); open = grassland, scrub, rock, riverbed; wetland; coast. Used to keep forest-only plants out of the Open list, and to re-stage NVS plots (canopy tree = mature forest indicator; canopy tree, small tree, shrub and tree fern = woody). species entries override their genus. Check and correct freely.",
-  "genera": {
-    "Acaena": ["herb", "open"], "Acianthus": ["herb", "forest"], "Aciphylla": ["herb", "open"],
-    "Adiantum": ["fern", "forest"], "Alectryon": ["canopy tree", "forest"], "Alseuosmia": ["shrub", "forest"],
-    "Alsophila": ["tree fern", "forest"], "Anaphalioides": ["herb", "open"], "Anisotome": ["herb", "open"],
-    "Apium": ["herb", "coast"], "Apodasmia": ["graminoid", "wetland"], "Aporostylis": ["herb", "open"],
-    "Archeria": ["shrub", "forest"], "Aristotelia": ["small tree", "both"], "Arthropodium": ["herb", "both"],
-    "Arthropteris": ["fern", "forest"], "Asplenium": ["fern", "forest"], "Astelia": ["epiphyte", "forest"],
-    "Australina": ["herb", "forest"], "Austroblechnum": ["fern", "forest"], "Austroderia": ["graminoid", "open"],
-    "Avicennia": ["small tree", "coast"], "Azolla": ["aquatic", "wetland"], "Beilschmiedia": ["canopy tree", "forest"],
-    "Brachyglottis": ["shrub", "both"], "Brachyscome": ["herb", "open"], "Bulbophyllum": ["epiphyte", "forest"],
-    "Callitriche": ["aquatic", "wetland"], "Calystegia": ["climber", "open"], "Cardamine": ["herb", "both"],
-    "Carex": ["graminoid", "both"], "Carmichaelia": ["shrub", "open"], "Carpodetus": ["small tree", "forest"],
-    "Celmisia": ["herb", "open"], "Centella": ["herb", "open"], "Chionochloa": ["graminoid", "open"],
-    "Clematis": ["climber", "forest"], "Clianthus": ["shrub", "open"], "Coprosma": ["shrub", "both"],
-    "Cordyline": ["small tree", "both"], "Coriaria": ["shrub", "open"], "Corokia": ["shrub", "both"],
-    "Corybas": ["herb", "forest"], "Corynocarpus": ["canopy tree", "forest"], "Cotula": ["herb", "wetland"],
-    "Cranfillia": ["fern", "forest"], "Cyperus": ["graminoid", "wetland"], "Dacrycarpus": ["canopy tree", "forest"],
-    "Dacrydium": ["canopy tree", "forest"], "Dendrobium": ["epiphyte", "forest"], "Dianella": ["herb", "both"],
-    "Dichondra": ["herb", "open"], "Dicksonia": ["tree fern", "forest"], "Didymocheton": ["canopy tree", "forest"],
-    "Disphyma": ["herb", "coast"], "Dodonaea": ["shrub", "both"], "Doodia": ["fern", "both"],
-    "Dracophyllum": ["shrub", "both"], "Drosera": ["herb", "open"], "Drymoanthus": ["epiphyte", "forest"],
-    "Earina": ["epiphyte", "forest"], "Echinopogon": ["graminoid", "forest"], "Elaeocarpus": ["canopy tree", "forest"],
-    "Eleocharis": ["graminoid", "wetland"], "Entelea": ["small tree", "both"], "Epilobium": ["herb", "open"],
-    "Euchiton": ["herb", "open"], "Euphorbia": ["herb", "coast"], "Euphrasia": ["herb", "open"],
-    "Ficinia": ["graminoid", "coast"], "Freycinetia": ["climber", "forest"], "Fuchsia": ["small tree", "forest"],
-    "Fuscospora": ["canopy tree", "forest"], "Gahnia": ["graminoid", "both"], "Gastrodia": ["herb", "forest"],
-    "Gaultheria": ["shrub", "open"], "Geniostoma": ["shrub", "forest"], "Geranium": ["herb", "open"],
-    "Geum": ["herb", "both"], "Goodenia": ["herb", "coast"], "Griselinia": ["small tree", "forest"],
-    "Gunnera": ["herb", "wetland"], "Halocarpus": ["canopy tree", "both"], "Haloragis": ["herb", "open"],
-    "Hedycarya": ["small tree", "forest"], "Helichrysum": ["herb", "open"], "Histiopteris": ["fern", "open"],
-    "Hoheria": ["small tree", "forest"], "Hydrocotyle": ["herb", "both"], "Hymenophyllum": ["epiphyte", "forest"],
-    "Hypolepis": ["fern", "open"], "Icarus": ["herb", "open"], "Isachne": ["graminoid", "wetland"],
-    "Isolepis": ["graminoid", "wetland"], "Ixerba": ["canopy tree", "forest"], "Jovellana": ["shrub", "forest"],
-    "Juncus": ["graminoid", "wetland"], "Knightia": ["canopy tree", "both"], "Korthalsella": ["epiphyte", "forest"],
-    "Kunzea": ["small tree", "both"], "Lachnagrostis": ["graminoid", "open"], "Lastreopsis": ["fern", "forest"],
-    "Laurelia": ["canopy tree", "forest"], "Lecanopteris": ["epiphyte", "forest"], "Lepidosperma": ["graminoid", "open"],
-    "Lepidothamnus": ["shrub", "wetland"], "Leptecophylla": ["shrub", "open"], "Leptinella": ["herb", "both"],
-    "Leptolepia": ["fern", "forest"], "Leptopteris": ["fern", "forest"], "Leptospermum": ["small tree", "both"],
-    "Leucogenes": ["herb", "open"], "Leucopogon": ["shrub", "open"], "Libertia": ["herb", "both"],
-    "Libocedrus": ["canopy tree", "forest"], "Lilaeopsis": ["herb", "wetland"], "Limosella": ["herb", "wetland"],
-    "Lindsaea": ["fern", "both"], "Linum": ["herb", "open"], "Litsea": ["canopy tree", "forest"],
-    "Lobelia": ["herb", "open"], "Lomaria": ["fern", "forest"], "Lophomyrtus": ["small tree", "forest"],
-    "Lophozonia": ["canopy tree", "forest"], "Loxogramme": ["epiphyte", "forest"], "Luzuriaga": ["herb", "forest"],
-    "Lygodium": ["climber", "both"], "Machaerina": ["graminoid", "wetland"], "Macrolearia": ["shrub", "both"],
-    "Melicope": ["small tree", "forest"], "Melicytus": ["small tree", "forest"], "Meryta": ["small tree", "forest"],
-    "Metrosideros": ["canopy tree", "both"], "Microlaena": ["graminoid", "forest"], "Microtis": ["herb", "open"],
-    "Muehlenbeckia": ["climber", "open"], "Myoporum": ["small tree", "coast"], "Myriophyllum": ["aquatic", "wetland"],
-    "Myrsine": ["small tree", "forest"], "Neomyrtus": ["shrub", "forest"], "Nertera": ["herb", "forest"],
-    "Nestegis": ["canopy tree", "forest"], "Notogrammitis": ["epiphyte", "forest"], "Olearia": ["shrub", "both"],
-    "Ophioglossum": ["fern", "open"], "Oplismenus": ["graminoid", "forest"], "Orthoceras": ["herb", "open"],
-    "Ourisia": ["herb", "open"], "Oxalis": ["herb", "open"], "Ozothamnus": ["shrub", "open"],
-    "Paesia": ["fern", "open"], "Pakau": ["fern", "forest"], "Parablechnum": ["fern", "both"],
-    "Parapolystichum": ["fern", "forest"], "Parietaria": ["herb", "both"], "Parsonsia": ["climber", "forest"],
-    "Passiflora": ["climber", "forest"], "Pectinopitys": ["canopy tree", "forest"], "Pelargonium": ["herb", "open"],
-    "Pellaea": ["fern", "open"], "Pennantia": ["small tree", "forest"], "Pentachondra": ["shrub", "open"],
-    "Pentapogon": ["graminoid", "open"], "Peperomia": ["herb", "forest"], "Peraxilla": ["epiphyte", "forest"],
-    "Persicaria": ["herb", "wetland"], "Phormium": ["herb", "both"], "Phyllachne": ["herb", "open"],
-    "Phyllocladus": ["canopy tree", "both"], "Pimelea": ["shrub", "open"], "Piper": ["shrub", "forest"],
-    "Pittosporum": ["small tree", "forest"], "Plagianthus": ["small tree", "both"], "Planchonella": ["canopy tree", "forest"],
-    "Plantago": ["herb", "open"], "Poa": ["graminoid", "open"], "Podocarpus": ["canopy tree", "both"],
-    "Polyphlebium": ["epiphyte", "forest"], "Polystichum": ["fern", "forest"], "Pomaderris": ["shrub", "both"],
-    "Potamogeton": ["aquatic", "wetland"], "Prumnopitys": ["canopy tree", "forest"], "Pseudopanax": ["small tree", "forest"],
-    "Pseudowintera": ["shrub", "forest"], "Pteridium": ["fern", "open"], "Pteris": ["fern", "both"],
-    "Pterophylla": ["canopy tree", "forest"], "Pterostylis": ["herb", "forest"], "Pyrrosia": ["epiphyte", "forest"],
-    "Quintinia": ["canopy tree", "forest"], "Ranunculus": ["herb", "both"], "Raoulia": ["herb", "open"],
-    "Raukaua": ["small tree", "forest"], "Rhabdothamnus": ["shrub", "forest"], "Rhopalostylis": ["canopy tree", "forest"],
-    "Ripogonum": ["climber", "forest"], "Rubus": ["climber", "forest"], "Rumohra": ["fern", "forest"],
-    "Rytidosperma": ["graminoid", "open"], "Salicornia": ["herb", "coast"], "Samolus": ["herb", "coast"],
-    "Scandia": ["herb", "coast"], "Schefflera": ["small tree", "forest"], "Schoenoplectus": ["graminoid", "wetland"],
-    "Schoenus": ["graminoid", "wetland"], "Senecio": ["herb", "open"], "Solanum": ["shrub", "both"],
-    "Sophora": ["small tree", "both"], "Sphaeropteris": ["tree fern", "forest"], "Spinifex": ["graminoid", "coast"],
-    "Stellaria": ["herb", "both"], "Sticherus": ["fern", "both"], "Streblus": ["small tree", "forest"],
-    "Tetragonia": ["herb", "coast"], "Teucrium": ["shrub", "coast"], "Thelymitra": ["herb", "open"],
-    "Thyridia": ["herb", "wetland"], "Tmesipteris": ["epiphyte", "forest"], "Toronia": ["small tree", "forest"],
-    "Triglochin": ["graminoid", "wetland"], "Typha": ["graminoid", "wetland"], "Urtica": ["herb", "both"],
-    "Veronica": ["shrub", "both"], "Viola": ["herb", "both"], "Vitex": ["canopy tree", "forest"],
-    "Zostera": ["aquatic", "coast"]
-  },
-  "species": {
-    "Coprosma robusta": ["shrub", "both"], "Coprosma propinqua": ["shrub", "both"],
-    "Coprosma repens": ["shrub", "coast"], "Coprosma acerosa": ["shrub", "coast"],
-    "Coprosma grandifolia": ["shrub", "forest"], "Coprosma rhamnoides": ["shrub", "forest"],
-    "Coprosma arborea": ["small tree", "forest"], "Coprosma lucida": ["shrub", "forest"],
-    "Coprosma areolata": ["shrub", "forest"], "Coprosma spathulata": ["shrub", "forest"],
-    "Brachyglottis repanda": ["small tree", "both"], "Pittosporum crassifolium": ["small tree", "coast"],
-    "Pittosporum tenuifolium": ["small tree", "both"], "Pseudopanax arboreus": ["small tree", "both"],
-    "Melicytus ramiflorus": ["small tree", "both"], "Plagianthus divaricatus": ["shrub", "coast"],
-    "Metrosideros excelsa": ["canopy tree", "coast"], "Metrosideros robusta": ["canopy tree", "forest"],
-    "Metrosideros perforata": ["climber", "forest"], "Metrosideros fulgens": ["climber", "forest"],
-    "Metrosideros diffusa": ["climber", "forest"], "Carex secta": ["graminoid", "wetland"],
-    "Carex virgata": ["graminoid", "wetland"], "Carex geminata": ["graminoid", "wetland"],
-    "Carex dissita": ["graminoid", "forest"], "Carex uncinata": ["graminoid", "forest"],
-    "Asplenium flabellifolium": ["fern", "open"], "Asplenium obtusatum": ["fern", "coast"],
-    "Veronica stricta": ["shrub", "open"], "Olearia solandri": ["shrub", "coast"]
-  }
+ "_note": "Growth form and usual habitat of each native genus in the Gisborne records, set by hand (NZTCS has no growth form). habitat: forest = forest interior or understorey; both = forest and open or scrub (pioneers, edge species); open = grassland, scrub, rock, riverbed; wetland; coast. Used to keep forest-only plants out of the Open list, and to re-stage NVS plots (canopy tree = mature forest indicator; canopy tree, small tree, shrub and tree fern = woody). species entries override their genus. Check and correct freely.",
+ "genera": {
+  "Acaena": [
+   "herb",
+   "open"
+  ],
+  "Acianthus": [
+   "herb",
+   "forest"
+  ],
+  "Aciphylla": [
+   "herb",
+   "open"
+  ],
+  "Adiantum": [
+   "fern",
+   "forest"
+  ],
+  "Alectryon": [
+   "canopy tree",
+   "forest"
+  ],
+  "Alseuosmia": [
+   "shrub",
+   "forest"
+  ],
+  "Alsophila": [
+   "tree fern",
+   "forest"
+  ],
+  "Anaphalioides": [
+   "herb",
+   "open"
+  ],
+  "Anisotome": [
+   "herb",
+   "open"
+  ],
+  "Apium": [
+   "herb",
+   "coast"
+  ],
+  "Apodasmia": [
+   "graminoid",
+   "wetland"
+  ],
+  "Aporostylis": [
+   "herb",
+   "open"
+  ],
+  "Archeria": [
+   "shrub",
+   "forest"
+  ],
+  "Aristotelia": [
+   "small tree",
+   "both"
+  ],
+  "Arthropodium": [
+   "herb",
+   "both"
+  ],
+  "Arthropteris": [
+   "fern",
+   "forest"
+  ],
+  "Asplenium": [
+   "fern",
+   "forest"
+  ],
+  "Astelia": [
+   "epiphyte",
+   "forest"
+  ],
+  "Australina": [
+   "herb",
+   "forest"
+  ],
+  "Austroblechnum": [
+   "fern",
+   "forest"
+  ],
+  "Austroderia": [
+   "graminoid",
+   "open"
+  ],
+  "Avicennia": [
+   "small tree",
+   "coast"
+  ],
+  "Azolla": [
+   "aquatic",
+   "wetland"
+  ],
+  "Beilschmiedia": [
+   "canopy tree",
+   "forest"
+  ],
+  "Brachyglottis": [
+   "shrub",
+   "both"
+  ],
+  "Brachyscome": [
+   "herb",
+   "open"
+  ],
+  "Bulbophyllum": [
+   "epiphyte",
+   "forest"
+  ],
+  "Callitriche": [
+   "aquatic",
+   "wetland"
+  ],
+  "Calystegia": [
+   "climber",
+   "open"
+  ],
+  "Cardamine": [
+   "herb",
+   "both"
+  ],
+  "Carex": [
+   "graminoid",
+   "both"
+  ],
+  "Carmichaelia": [
+   "shrub",
+   "open"
+  ],
+  "Carpodetus": [
+   "small tree",
+   "forest"
+  ],
+  "Celmisia": [
+   "herb",
+   "open"
+  ],
+  "Centella": [
+   "herb",
+   "open"
+  ],
+  "Chionochloa": [
+   "graminoid",
+   "open"
+  ],
+  "Clematis": [
+   "climber",
+   "forest"
+  ],
+  "Clianthus": [
+   "shrub",
+   "open"
+  ],
+  "Coprosma": [
+   "shrub",
+   "both"
+  ],
+  "Cordyline": [
+   "small tree",
+   "both"
+  ],
+  "Coriaria": [
+   "shrub",
+   "open"
+  ],
+  "Corokia": [
+   "shrub",
+   "both"
+  ],
+  "Corybas": [
+   "herb",
+   "forest"
+  ],
+  "Corynocarpus": [
+   "canopy tree",
+   "forest"
+  ],
+  "Cotula": [
+   "herb",
+   "wetland"
+  ],
+  "Cranfillia": [
+   "fern",
+   "forest"
+  ],
+  "Cyperus": [
+   "graminoid",
+   "wetland"
+  ],
+  "Dacrycarpus": [
+   "canopy tree",
+   "forest"
+  ],
+  "Dacrydium": [
+   "canopy tree",
+   "forest"
+  ],
+  "Dendrobium": [
+   "epiphyte",
+   "forest"
+  ],
+  "Dianella": [
+   "herb",
+   "both"
+  ],
+  "Dichondra": [
+   "herb",
+   "open"
+  ],
+  "Dicksonia": [
+   "tree fern",
+   "forest"
+  ],
+  "Didymocheton": [
+   "canopy tree",
+   "forest"
+  ],
+  "Disphyma": [
+   "herb",
+   "coast"
+  ],
+  "Dodonaea": [
+   "shrub",
+   "both"
+  ],
+  "Doodia": [
+   "fern",
+   "both"
+  ],
+  "Dracophyllum": [
+   "shrub",
+   "both"
+  ],
+  "Drosera": [
+   "herb",
+   "open"
+  ],
+  "Drymoanthus": [
+   "epiphyte",
+   "forest"
+  ],
+  "Earina": [
+   "epiphyte",
+   "forest"
+  ],
+  "Echinopogon": [
+   "graminoid",
+   "forest"
+  ],
+  "Elaeocarpus": [
+   "canopy tree",
+   "forest"
+  ],
+  "Eleocharis": [
+   "graminoid",
+   "wetland"
+  ],
+  "Entelea": [
+   "small tree",
+   "both"
+  ],
+  "Epilobium": [
+   "herb",
+   "open"
+  ],
+  "Euchiton": [
+   "herb",
+   "open"
+  ],
+  "Euphorbia": [
+   "herb",
+   "coast"
+  ],
+  "Euphrasia": [
+   "herb",
+   "open"
+  ],
+  "Ficinia": [
+   "graminoid",
+   "coast"
+  ],
+  "Freycinetia": [
+   "climber",
+   "forest"
+  ],
+  "Fuchsia": [
+   "small tree",
+   "forest"
+  ],
+  "Fuscospora": [
+   "canopy tree",
+   "forest"
+  ],
+  "Gahnia": [
+   "graminoid",
+   "both"
+  ],
+  "Gastrodia": [
+   "herb",
+   "forest"
+  ],
+  "Gaultheria": [
+   "shrub",
+   "open"
+  ],
+  "Geniostoma": [
+   "shrub",
+   "forest"
+  ],
+  "Geranium": [
+   "herb",
+   "open"
+  ],
+  "Geum": [
+   "herb",
+   "both"
+  ],
+  "Goodenia": [
+   "herb",
+   "coast"
+  ],
+  "Griselinia": [
+   "small tree",
+   "forest"
+  ],
+  "Gunnera": [
+   "herb",
+   "wetland"
+  ],
+  "Halocarpus": [
+   "canopy tree",
+   "both"
+  ],
+  "Haloragis": [
+   "herb",
+   "open"
+  ],
+  "Hedycarya": [
+   "small tree",
+   "forest"
+  ],
+  "Helichrysum": [
+   "herb",
+   "open"
+  ],
+  "Histiopteris": [
+   "fern",
+   "open"
+  ],
+  "Hoheria": [
+   "small tree",
+   "forest"
+  ],
+  "Hydrocotyle": [
+   "herb",
+   "both"
+  ],
+  "Hymenophyllum": [
+   "epiphyte",
+   "forest"
+  ],
+  "Hypolepis": [
+   "fern",
+   "open"
+  ],
+  "Icarus": [
+   "herb",
+   "open"
+  ],
+  "Isachne": [
+   "graminoid",
+   "wetland"
+  ],
+  "Isolepis": [
+   "graminoid",
+   "wetland"
+  ],
+  "Ixerba": [
+   "canopy tree",
+   "forest"
+  ],
+  "Jovellana": [
+   "shrub",
+   "forest"
+  ],
+  "Juncus": [
+   "graminoid",
+   "wetland"
+  ],
+  "Knightia": [
+   "canopy tree",
+   "both"
+  ],
+  "Korthalsella": [
+   "epiphyte",
+   "forest"
+  ],
+  "Kunzea": [
+   "small tree",
+   "both"
+  ],
+  "Lachnagrostis": [
+   "graminoid",
+   "open"
+  ],
+  "Lastreopsis": [
+   "fern",
+   "forest"
+  ],
+  "Laurelia": [
+   "canopy tree",
+   "forest"
+  ],
+  "Lecanopteris": [
+   "epiphyte",
+   "forest"
+  ],
+  "Lepidosperma": [
+   "graminoid",
+   "open"
+  ],
+  "Lepidothamnus": [
+   "shrub",
+   "wetland"
+  ],
+  "Leptecophylla": [
+   "shrub",
+   "open"
+  ],
+  "Leptinella": [
+   "herb",
+   "both"
+  ],
+  "Leptolepia": [
+   "fern",
+   "forest"
+  ],
+  "Leptopteris": [
+   "fern",
+   "forest"
+  ],
+  "Leptospermum": [
+   "small tree",
+   "both"
+  ],
+  "Leucogenes": [
+   "herb",
+   "open"
+  ],
+  "Leucopogon": [
+   "shrub",
+   "open"
+  ],
+  "Libertia": [
+   "herb",
+   "both"
+  ],
+  "Libocedrus": [
+   "canopy tree",
+   "forest"
+  ],
+  "Lilaeopsis": [
+   "herb",
+   "wetland"
+  ],
+  "Limosella": [
+   "herb",
+   "wetland"
+  ],
+  "Lindsaea": [
+   "fern",
+   "both"
+  ],
+  "Linum": [
+   "herb",
+   "open"
+  ],
+  "Litsea": [
+   "canopy tree",
+   "forest"
+  ],
+  "Lobelia": [
+   "herb",
+   "open"
+  ],
+  "Lomaria": [
+   "fern",
+   "forest"
+  ],
+  "Lophomyrtus": [
+   "small tree",
+   "forest"
+  ],
+  "Lophozonia": [
+   "canopy tree",
+   "forest"
+  ],
+  "Loxogramme": [
+   "epiphyte",
+   "forest"
+  ],
+  "Luzuriaga": [
+   "herb",
+   "forest"
+  ],
+  "Lygodium": [
+   "climber",
+   "both"
+  ],
+  "Machaerina": [
+   "graminoid",
+   "wetland"
+  ],
+  "Macrolearia": [
+   "shrub",
+   "both"
+  ],
+  "Melicope": [
+   "small tree",
+   "forest"
+  ],
+  "Melicytus": [
+   "small tree",
+   "forest"
+  ],
+  "Meryta": [
+   "small tree",
+   "forest"
+  ],
+  "Metrosideros": [
+   "canopy tree",
+   "both"
+  ],
+  "Microlaena": [
+   "graminoid",
+   "forest"
+  ],
+  "Microtis": [
+   "herb",
+   "open"
+  ],
+  "Muehlenbeckia": [
+   "climber",
+   "open"
+  ],
+  "Myoporum": [
+   "small tree",
+   "coast"
+  ],
+  "Myriophyllum": [
+   "aquatic",
+   "wetland"
+  ],
+  "Myrsine": [
+   "small tree",
+   "forest"
+  ],
+  "Neomyrtus": [
+   "shrub",
+   "forest"
+  ],
+  "Nertera": [
+   "herb",
+   "forest"
+  ],
+  "Nestegis": [
+   "canopy tree",
+   "forest"
+  ],
+  "Notogrammitis": [
+   "epiphyte",
+   "forest"
+  ],
+  "Olearia": [
+   "shrub",
+   "both"
+  ],
+  "Ophioglossum": [
+   "fern",
+   "open"
+  ],
+  "Oplismenus": [
+   "graminoid",
+   "forest"
+  ],
+  "Orthoceras": [
+   "herb",
+   "open"
+  ],
+  "Ourisia": [
+   "herb",
+   "open"
+  ],
+  "Oxalis": [
+   "herb",
+   "open"
+  ],
+  "Ozothamnus": [
+   "shrub",
+   "open"
+  ],
+  "Paesia": [
+   "fern",
+   "open"
+  ],
+  "Pakau": [
+   "fern",
+   "forest"
+  ],
+  "Parablechnum": [
+   "fern",
+   "both"
+  ],
+  "Parapolystichum": [
+   "fern",
+   "forest"
+  ],
+  "Parietaria": [
+   "herb",
+   "both"
+  ],
+  "Parsonsia": [
+   "climber",
+   "forest"
+  ],
+  "Passiflora": [
+   "climber",
+   "forest"
+  ],
+  "Pectinopitys": [
+   "canopy tree",
+   "forest"
+  ],
+  "Pelargonium": [
+   "herb",
+   "open"
+  ],
+  "Pellaea": [
+   "fern",
+   "open"
+  ],
+  "Pennantia": [
+   "small tree",
+   "forest"
+  ],
+  "Pentachondra": [
+   "shrub",
+   "open"
+  ],
+  "Pentapogon": [
+   "graminoid",
+   "open"
+  ],
+  "Peperomia": [
+   "herb",
+   "forest"
+  ],
+  "Peraxilla": [
+   "epiphyte",
+   "forest"
+  ],
+  "Persicaria": [
+   "herb",
+   "wetland"
+  ],
+  "Phormium": [
+   "herb",
+   "both"
+  ],
+  "Phyllachne": [
+   "herb",
+   "open"
+  ],
+  "Phyllocladus": [
+   "canopy tree",
+   "both"
+  ],
+  "Pimelea": [
+   "shrub",
+   "open"
+  ],
+  "Piper": [
+   "shrub",
+   "forest"
+  ],
+  "Pittosporum": [
+   "small tree",
+   "forest"
+  ],
+  "Plagianthus": [
+   "small tree",
+   "both"
+  ],
+  "Planchonella": [
+   "canopy tree",
+   "forest"
+  ],
+  "Plantago": [
+   "herb",
+   "open"
+  ],
+  "Poa": [
+   "graminoid",
+   "open"
+  ],
+  "Podocarpus": [
+   "canopy tree",
+   "both"
+  ],
+  "Polyphlebium": [
+   "epiphyte",
+   "forest"
+  ],
+  "Polystichum": [
+   "fern",
+   "forest"
+  ],
+  "Pomaderris": [
+   "shrub",
+   "both"
+  ],
+  "Potamogeton": [
+   "aquatic",
+   "wetland"
+  ],
+  "Prumnopitys": [
+   "canopy tree",
+   "forest"
+  ],
+  "Pseudopanax": [
+   "small tree",
+   "forest"
+  ],
+  "Pseudowintera": [
+   "shrub",
+   "forest"
+  ],
+  "Pteridium": [
+   "fern",
+   "open"
+  ],
+  "Pteris": [
+   "fern",
+   "both"
+  ],
+  "Pterophylla": [
+   "canopy tree",
+   "forest"
+  ],
+  "Pterostylis": [
+   "herb",
+   "forest"
+  ],
+  "Pyrrosia": [
+   "epiphyte",
+   "forest"
+  ],
+  "Quintinia": [
+   "canopy tree",
+   "forest"
+  ],
+  "Ranunculus": [
+   "herb",
+   "both"
+  ],
+  "Raoulia": [
+   "herb",
+   "open"
+  ],
+  "Raukaua": [
+   "small tree",
+   "forest"
+  ],
+  "Rhabdothamnus": [
+   "shrub",
+   "forest"
+  ],
+  "Rhopalostylis": [
+   "canopy tree",
+   "forest"
+  ],
+  "Ripogonum": [
+   "climber",
+   "forest"
+  ],
+  "Rubus": [
+   "climber",
+   "forest"
+  ],
+  "Rumohra": [
+   "fern",
+   "forest"
+  ],
+  "Rytidosperma": [
+   "graminoid",
+   "open"
+  ],
+  "Salicornia": [
+   "herb",
+   "coast"
+  ],
+  "Samolus": [
+   "herb",
+   "coast"
+  ],
+  "Scandia": [
+   "herb",
+   "coast"
+  ],
+  "Schefflera": [
+   "small tree",
+   "forest"
+  ],
+  "Schoenoplectus": [
+   "graminoid",
+   "wetland"
+  ],
+  "Schoenus": [
+   "graminoid",
+   "wetland"
+  ],
+  "Senecio": [
+   "herb",
+   "open"
+  ],
+  "Solanum": [
+   "shrub",
+   "both"
+  ],
+  "Sophora": [
+   "small tree",
+   "both"
+  ],
+  "Sphaeropteris": [
+   "tree fern",
+   "forest"
+  ],
+  "Spinifex": [
+   "graminoid",
+   "coast"
+  ],
+  "Stellaria": [
+   "herb",
+   "both"
+  ],
+  "Sticherus": [
+   "fern",
+   "both"
+  ],
+  "Streblus": [
+   "small tree",
+   "forest"
+  ],
+  "Tetragonia": [
+   "herb",
+   "coast"
+  ],
+  "Teucrium": [
+   "shrub",
+   "coast"
+  ],
+  "Thelymitra": [
+   "herb",
+   "open"
+  ],
+  "Thyridia": [
+   "herb",
+   "wetland"
+  ],
+  "Tmesipteris": [
+   "epiphyte",
+   "forest"
+  ],
+  "Toronia": [
+   "small tree",
+   "forest"
+  ],
+  "Triglochin": [
+   "graminoid",
+   "wetland"
+  ],
+  "Typha": [
+   "graminoid",
+   "wetland"
+  ],
+  "Urtica": [
+   "herb",
+   "both"
+  ],
+  "Veronica": [
+   "shrub",
+   "both"
+  ],
+  "Viola": [
+   "herb",
+   "both"
+  ],
+  "Vitex": [
+   "canopy tree",
+   "forest"
+  ],
+  "Zostera": [
+   "aquatic",
+   "coast"
+  ]
+ },
+ "species": {
+  "Coprosma robusta": [
+   "shrub",
+   "both"
+  ],
+  "Coprosma propinqua": [
+   "shrub",
+   "both"
+  ],
+  "Coprosma repens": [
+   "shrub",
+   "coast"
+  ],
+  "Coprosma acerosa": [
+   "shrub",
+   "coast"
+  ],
+  "Coprosma grandifolia": [
+   "shrub",
+   "forest"
+  ],
+  "Coprosma rhamnoides": [
+   "shrub",
+   "forest"
+  ],
+  "Coprosma arborea": [
+   "small tree",
+   "forest"
+  ],
+  "Coprosma lucida": [
+   "shrub",
+   "forest"
+  ],
+  "Coprosma areolata": [
+   "shrub",
+   "forest"
+  ],
+  "Coprosma spathulata": [
+   "shrub",
+   "forest"
+  ],
+  "Brachyglottis repanda": [
+   "small tree",
+   "both"
+  ],
+  "Pittosporum crassifolium": [
+   "small tree",
+   "coast"
+  ],
+  "Pittosporum tenuifolium": [
+   "small tree",
+   "both"
+  ],
+  "Pseudopanax arboreus": [
+   "small tree",
+   "both"
+  ],
+  "Melicytus ramiflorus": [
+   "small tree",
+   "both"
+  ],
+  "Plagianthus divaricatus": [
+   "shrub",
+   "coast"
+  ],
+  "Metrosideros excelsa": [
+   "canopy tree",
+   "coast"
+  ],
+  "Metrosideros robusta": [
+   "canopy tree",
+   "forest"
+  ],
+  "Metrosideros perforata": [
+   "climber",
+   "forest"
+  ],
+  "Metrosideros fulgens": [
+   "climber",
+   "forest"
+  ],
+  "Metrosideros diffusa": [
+   "climber",
+   "forest"
+  ],
+  "Carex secta": [
+   "graminoid",
+   "wetland"
+  ],
+  "Carex virgata": [
+   "graminoid",
+   "wetland"
+  ],
+  "Carex geminata": [
+   "graminoid",
+   "wetland"
+  ],
+  "Carex dissita": [
+   "graminoid",
+   "forest"
+  ],
+  "Carex uncinata": [
+   "graminoid",
+   "forest"
+  ],
+  "Asplenium flabellifolium": [
+   "fern",
+   "open"
+  ],
+  "Asplenium obtusatum": [
+   "fern",
+   "coast"
+  ],
+  "Veronica stricta": [
+   "shrub",
+   "open"
+  ],
+  "Olearia solandri": [
+   "shrub",
+   "coast"
+  ]
+ },
+ "_layers_note": "Layers a plant can occupy, for the page's layer columns and filter. layer_of_form is the default for each growth form; layers overrides it for a genus or species (species first), where a plant commonly fills more than one layer, e.g. kanuka forms the canopy of regenerating stands but sits under taller trees in mature forest.",
+ "layer_of_form": {
+  "canopy tree": [
+   "canopy"
+  ],
+  "small tree": [
+   "subcanopy"
+  ],
+  "shrub": [
+   "understorey"
+  ],
+  "tree fern": [
+   "subcanopy",
+   "understorey"
+  ],
+  "fern": [
+   "ground"
+  ],
+  "graminoid": [
+   "ground"
+  ],
+  "herb": [
+   "ground"
+  ],
+  "aquatic": [
+   "ground"
+  ],
+  "climber": [
+   "climber"
+  ],
+  "epiphyte": [
+   "epiphyte"
+  ]
+ },
+ "layers": {
+  "Kunzea": [
+   "canopy",
+   "subcanopy"
+  ],
+  "Leptospermum": [
+   "canopy",
+   "subcanopy",
+   "understorey"
+  ],
+  "Melicytus ramiflorus": [
+   "canopy",
+   "subcanopy"
+  ],
+  "Pseudopanax arboreus": [
+   "subcanopy",
+   "canopy"
+  ],
+  "Pittosporum tenuifolium": [
+   "subcanopy",
+   "canopy"
+  ],
+  "Pittosporum eugenioides": [
+   "subcanopy",
+   "canopy"
+  ],
+  "Cordyline australis": [
+   "subcanopy",
+   "canopy"
+  ],
+  "Corynocarpus laevigatus": [
+   "canopy",
+   "subcanopy"
+  ],
+  "Hedycarya": [
+   "subcanopy",
+   "understorey"
+  ],
+  "Coprosma robusta": [
+   "understorey",
+   "subcanopy"
+  ],
+  "Coprosma grandifolia": [
+   "understorey",
+   "subcanopy"
+  ],
+  "Coprosma arborea": [
+   "subcanopy"
+  ],
+  "Brachyglottis repanda": [
+   "understorey",
+   "subcanopy"
+  ],
+  "Aristotelia": [
+   "subcanopy",
+   "understorey"
+  ],
+  "Carpodetus": [
+   "subcanopy"
+  ],
+  "Schefflera": [
+   "subcanopy"
+  ],
+  "Myrsine": [
+   "subcanopy",
+   "understorey"
+  ],
+  "Rhopalostylis": [
+   "subcanopy",
+   "canopy"
+  ],
+  "Pterophylla": [
+   "canopy",
+   "subcanopy"
+  ],
+  "Knightia": [
+   "canopy"
+  ],
+  "Plagianthus regius": [
+   "canopy",
+   "subcanopy"
+  ],
+  "Hoheria": [
+   "subcanopy",
+   "canopy"
+  ],
+  "Sophora": [
+   "subcanopy",
+   "canopy"
+  ],
+  "Geniostoma": [
+   "understorey"
+  ],
+  "Piper": [
+   "understorey"
+  ],
+  "Coriaria": [
+   "understorey",
+   "subcanopy"
+  ],
+  "Astelia": [
+   "epiphyte",
+   "ground"
+  ],
+  "Asplenium flaccidum": [
+   "epiphyte",
+   "ground"
+  ],
+  "Asplenium oblongifolium": [
+   "ground",
+   "epiphyte"
+  ],
+  "Metrosideros excelsa": [
+   "canopy"
+  ],
+  "Metrosideros robusta": [
+   "canopy",
+   "epiphyte"
+  ]
+ }
 }

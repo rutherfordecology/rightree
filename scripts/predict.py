@@ -211,6 +211,21 @@ def load_growth_forms():
     return lookup
 
 
+def load_layers():
+    """Layers (canopy, subcanopy, understorey, ground, climber, epiphyte) a
+    plant can fill: species or genus override, else the default for its form."""
+    gf = json.loads((ROOT / "config" / "growth_forms.json").read_text(encoding="utf-8"))
+    form = load_growth_forms()
+
+    def layers(name):
+        o = gf["layers"].get(" ".join(name.split()[:2])) or gf["layers"].get(name.split()[0])
+        if o:
+            return o
+        f = form(name)
+        return gf["layer_of_form"].get(f[0], []) if f else []
+    return layers
+
+
 CANOPY = {"canopy tree"}
 WOODY_FORMS = {"canopy tree", "small tree", "shrub", "tree fern"}
 MIN_CANOPY_GENERA, MIN_WOODY_GENERA = 3, 4
@@ -509,6 +524,9 @@ def main():
     if len(sp):
         status = rec.drop_duplicates("name").set_index("name")[["category", "bioStatus"]]
         sp = sp.join(status, on="species")
+        layers = load_layers()
+        sp["growth_form"] = sp["species"].map(lambda s: (gf(s) or (None,))[0])
+        sp["layers"] = sp["species"].map(lambda s: ";".join(layers(s)))
     sp.to_csv(out_dir / "species.csv", index=False)
     report += ["## Notes",
                "- Plot share: proportion of the most similar NVS plots, in that stage, that recorded the species. "

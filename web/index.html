@@ -23,7 +23,7 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); display: grid; grid-template-columns: 460px 1fr; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); display: grid; grid-template-columns: 540px 1fr; }
 #side { display: flex; flex-direction: column; border-right: 1px solid var(--rule); min-height: 0; }
 header { padding: 14px 18px 12px; background: var(--slate); color: #fff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) header { background: #263b27; } }
@@ -88,6 +88,18 @@ a.sp:hover { color: var(--slate); border-bottom-color: var(--slate); }
 .bar { height: 8px; background: var(--rule); position: relative; margin-top: 5px; }
 .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--slate); }
 .bar i.obs { opacity: .55; }
+/* Layer ticks, filter chips and likelihood tags */
+th.lay, td.lay { width: 26px; text-align: center; padding-left: 1px; padding-right: 1px; }
+th.lay { font-size: 10.5px; cursor: help; }
+td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--slate); margin-top: 5px; }
+.filters { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0; border-bottom: 1px solid var(--rule);
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { font-size: 12.5px; padding: 4px 9px; border: 1px solid var(--rule); background: var(--bg); }
+.chip.on { background: #263b27; color: #fff; border-color: #263b27; }
+.filters label { font-size: 12.5px; display: flex; align-items: center; gap: 4px; margin-left: auto; cursor: pointer; }
+.lk { font-size: 10.5px; font-weight: 600; padding: 0 5px; white-space: nowrap; }
+.lk.e { background: #263b27; color: #fff; } .lk.l { background: var(--soft); color: var(--slate); }
+.lk.p { border: 1px solid var(--rule); color: var(--grey); }
 .threat { font-size: 11px; color: var(--threat); font-weight: 600; }
 .stage-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .stage-actions button, .stage-actions .btn { font-size: 12.5px; padding: 5px 10px; }
@@ -394,9 +406,11 @@ function save(text, name, type) {
   a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click();
 }
 $("#dlCsv").onclick = () => {
-  const cols = ["unit", "stage", "tier", "common_name", "species", "plot_freq", "n_plots", "obs_share", "n_obs", "category", "bioStatus"];
+  const cols = ["unit", "stage", "tier", "common_name", "species", "likelihood", "plot_freq", "n_plots", "obs_share", "n_obs",
+                "growth_form", "layers", "category", "bioStatus"];
+  const rowsOut = current.species.map(s => ({...s, likelihood: likelihood(s, stageOf(s, current))}));
   const cell = v => { v = v ?? ""; return /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v; };
-  save("﻿" + [cols.join(",")].concat(current.species.map(s => cols.map(c => cell(s[c])).join(","))).join("\n"),
+  save("﻿" + [cols.join(",")].concat(rowsOut.map(s => cols.map(c => cell(s[c])).join(","))).join("\n"),
        `rightree_${current.id}_species.csv`, "text/csv");
 };
 $("#dlGeo").onclick = () => {
@@ -465,7 +479,10 @@ function show(j) {
   renderPolyList();
   if (ug.getLayers().length) map.fitBounds(ug.getBounds(), {padding: [40, 40], maxZoom: 16});
 
-  let html = `<p class="evidence">${multi ? `The site holds ${j.units.length} distinct habitats, mapped as units. Each gets its own lists.` : "The site is one habitat, so it is treated as one unit."}
+  let html = `<div class="filters">${[["", "All layers"]].concat(LAYERS.map(l => [l[0], l[2] === "Climber or epiphyte" ? "Climbers & epiphytes" : l[2]]))
+      .map(([k, nm]) => `<button class="chip${layerFilter === k ? " on" : ""}" data-layer="${k}">${nm}</button>`).join("")}
+    <label title="Species from a single plot or one or two records"><input type="checkbox" id="showPossible"${showPossible ? " checked" : ""}> Show possible</label></div>
+    <p class="evidence">${multi ? `The site holds ${j.units.length} distinct habitats, mapped as units. Each gets its own lists.` : "The site is one habitat, so it is treated as one unit."}
     ${j.n_on_site ? `${j.n_on_site} records on or within ${j.on_site_buffer_m} m of the site were left out, so existing plantings don't feed the list.` : ""}</p>`;
   for (const u of j.units) {
     const stages = j.stages.filter(s => s.unit === u.unit);
@@ -483,22 +500,47 @@ function show(j) {
       <div class="stage"></div></section>`;
   }
   html += `<details class="foot"><summary>How to read this</summary>
+    <p><b>Expected</b>: in 40% or more of the similar plots. <b>Likely</b>: in 15% or more (at least 2 plots), or 3 or more records.
+    <b>Possible</b>: one plot or one or two records; can grow there but don't count on it. Hidden unless "Show possible" is ticked.</p>
+    <p><b>C S U G O</b>: canopy, subcanopy, understorey, ground cover, climber or epiphyte. A plant can fill more than one layer
+    (kānuka is canopy in regenerating stands, subcanopy in mature forest). Set by genus from a hand-made table.</p>
     <p><b>% of plots</b>: share of the most similar NVS survey plots that recorded the species. Plots list everything present, so this is the strongest evidence.
     <b>% of records</b>: share of nearby iNaturalist and herbarium records. These only show what people chose to record.</p>
     <p>Similar means within ${j.max_d} on a 0–1 scale across climate, terrain and soil, and not far off in temperature, frost, rainfall or distance to the coast.
     Best-available lists go out to ${j.fallback_d}.</p>
     <p>Most NVS plots date from the 1950s–60s and lie in the western ranges. Natives only. A starting list to check on the ground, not a survey.</p></details>`;
   $("#results").innerHTML = html;
+  const rerenders = [];
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => { layerFilter = c.dataset.layer;
+    document.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", x === c)); rerenders.forEach(f => f()); });
+  $("#showPossible").onchange = e => { showPossible = e.target.checked; rerenders.forEach(f => f()); };
   document.querySelectorAll(".unit").forEach(sec => {
     const unit = +sec.dataset.unit, stages = j.stages.filter(s => s.unit === unit);
     const render = i => { sec.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", +t.dataset.i === i));
       sec.querySelector(".stage").innerHTML = stageHtml(stages[i], j); drawPlots(stages[i]); bindStage(sec, stages[i], j); };
     sec.querySelectorAll(".tab").forEach(t => t.onclick = () => render(+t.dataset.i));
+    rerenders.push(() => render(+(sec.querySelector(".tab.on")?.dataset.i ?? 0)));
     sec.querySelector(".unit-head").onclick = () => { const b = L.latLngBounds([]); ug.eachLayer(l => { if (l.feature.properties.unit === unit) b.extend(l.getBounds()); }); if (b.isValid()) map.fitBounds(b, {maxZoom: 16}); };
     render(firstGood(stages));
   });
 }
 function firstGood(stages) { const i = stages.findIndex(s => s.enough && s.tier === "close"); return i >= 0 ? i : Math.max(0, stages.findIndex(s => s.enough)); }
+
+// ── Layers and likelihood ────────────────────────────────────────────────
+const LAYERS = [["canopy", "C", "Canopy"], ["subcanopy", "S", "Subcanopy"], ["understorey", "U", "Understorey"],
+  ["ground", "G", "Ground cover"], ["other", "O", "Climber or epiphyte"]];
+const layersOf = r => { const l = (r.layers || "").split(";").filter(Boolean);
+  return new Set(l.map(x => x === "climber" || x === "epiphyte" ? "other" : x)); };
+let layerFilter = "", showPossible = false;
+// Expected: in 40%+ of similar plots. Likely: 15%+ of plots (2 or more), or
+// 3+ records. Possible: a single plot or one or two records.
+function likelihood(r, s) {
+  const plots = Math.round(r.plot_freq * s.n_plots), recs = Math.round(r.obs_share * s.n_obs);
+  if (r.plot_freq >= 0.4 && plots >= 2) return "Expected";
+  if ((r.plot_freq >= 0.15 && plots >= 2) || recs >= 3) return "Likely";
+  return "Possible";
+}
+const stageOf = (r, j) => j.stages.find(s => s.unit === r.unit && s.stage === r.stage);
 
 function stageHtml(s, j, all) {
   const name = STAGE_SHORT[s.stage] || s.stage;
@@ -510,22 +552,30 @@ function stageHtml(s, j, all) {
   if (s.tier !== "close") h += `<div class="note">No close matches. These are the nearest sites that still have a similar climate and distance to the coast.
     Treat as a lead to check, not a prediction.${s.plots_used.length ? " The plots used are the orange dots on the map." : ""}</div>`;
   if (s.obs_only && s.stage !== "Wetland") h += `<div class="note plain">Too few survey plots, so this list is from records only. It shows what people have recorded, not what is absent.</div>`;
-  const rows = j.species.filter(r => r.unit === s.unit && r.stage === s.stage);
-  const n = all ? rows.length : Math.min(25, rows.length);
-  const usePlots = rows.some(r => r.plot_freq > 0);
+  const allRows = j.species.filter(r => r.unit === s.unit && r.stage === s.stage);
+  const usePlots = allRows.some(r => r.plot_freq > 0);
+  const nPossible = allRows.filter(r => likelihood(r, s) === "Possible").length;
+  const rows = allRows.filter(r => (showPossible || likelihood(r, s) !== "Possible") && (!layerFilter || layersOf(r).has(layerFilter)));
+  // A layer filter shows every match; otherwise the top 25 until "Show all".
+  const n = all || layerFilter ? rows.length : Math.min(25, rows.length);
+  const shown = [layerFilter ? LAYERS.find(l => l[0] === layerFilter)[2].toLowerCase() : "", showPossible ? "" : "expected and likely"].filter(Boolean).join(", ");
+  h += `<div class="evidence">${rows.length} of ${allRows.length} species shown${shown ? ` (${shown})` : ""}.${!showPossible && nPossible ? ` ${nPossible} possible species hidden.` : ""}</div>`;
+  if (!rows.length) return h + `<div class="note plain">No species match the filter in this list.</div>`;
   const max = usePlots ? 1 : Math.max(...rows.map(x => x.obs_share), 0);
-  h += `<table><thead><tr><th>Species</th><th class="num">${usePlots ? "% of plots" : "% of records"}</th><th></th></tr></thead><tbody>`;
+  h += `<table><thead><tr><th>Species</th><th></th><th class="num">${usePlots ? "% of plots" : "% of records"}</th>` +
+    LAYERS.map(([k, ab, nm]) => `<th class="lay" title="${nm}">${ab}</th>`).join("") + `</tr></thead><tbody>`;
   for (const r of rows.slice(0, n)) {
-    const v = usePlots ? r.plot_freq : r.obs_share;
+    const v = usePlots ? r.plot_freq : r.obs_share, lk = likelihood(r, s), ls = layersOf(r);
     h += `<tr><td><a class="sp" href="${ll(r.species)}" target="_blank" rel="noopener">${esc(r.common_name || r.species)}</a>
       ${THREAT(r.category) ? ` <span class="threat" title="NZTCS">${esc(r.category)}</span>` : ""}
       ${r.common_name ? `<div class="sci">${esc(r.species)}</div>` : ""}</td>
-      <td class="num">${pct(v) || (usePlots && r.obs_share ? `<span class="hint">${pct(r.obs_share)} rec.</span>` : "")}</td>
-      <td class="barcell"><div class="bar"><i class="${usePlots ? "" : "obs"}" style="width:${Math.round(100 * v / (max || 1))}%"></i></div></td></tr>`;
+      <td><span class="lk ${lk[0].toLowerCase()}">${lk}</span></td>
+      <td class="num">${pct(v) || (usePlots && r.obs_share ? `<span class="hint">${pct(r.obs_share)} rec.</span>` : "")}</td>` +
+      LAYERS.map(([k, , nm]) => `<td class="lay" title="${nm}">${ls.has(k) ? "<i></i>" : ""}</td>`).join("") + `</tr>`;
   }
   h += `</tbody></table><div class="stage-actions">`;
   if (rows.length > n) h += `<button class="more">Show all ${rows.length}</button>`;
-  h += `<a class="btn" target="_blank" rel="noopener" href="${LOOKLIKE}?s=${rows.slice(0, n).map(r => encodeURIComponent(r.species)).join("|")}">Open ${all ? "list" : "top " + n} in LookLike</a></div>`;
+  h += `<a class="btn" target="_blank" rel="noopener" href="${LOOKLIKE}?s=${rows.slice(0, n).map(r => encodeURIComponent(r.species)).join("|")}">Open ${n === rows.length ? "these" : "top " + n} in LookLike</a></div>`;
   return h;
 }
 function bindStage(sec, s, j) { const b = sec.querySelector(".more"); if (b) b.onclick = () => { sec.querySelector(".stage").innerHTML = stageHtml(s, j, true); bindStage(sec, s, j); }; }
