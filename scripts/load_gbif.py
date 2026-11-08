@@ -1,8 +1,10 @@
 """Load a GBIF SIMPLE_CSV download zip (from Occurd's Big Data Mode) and
 keep the records Rightree can use.
 
-Keeps vascular plant records that are PRESENT, identified to species, and
-located to within 100 m. Drops Pl@ntNet's automatic image IDs. NVS plot
+Keeps native vascular plant records that are PRESENT, identified to species,
+and located to within 100 m. Drops Pl@ntNet's automatic image IDs and records
+from known planted collections (config/cultivated_sites.json). Native status
+comes from scripts/native_status.py; exotic records are written separately. NVS plot
 visits are reconstructed as (dataset, location, date), because SIMPLE_CSV
 has no eventID.
 
@@ -19,6 +21,9 @@ from pathlib import Path
 
 import pandas as pd
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from native_status import classify  # noqa: E402
 
 NVS = "788439f0-3b56-11dc-8c19-b8a03c50a862"
 INAT = "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
@@ -67,6 +72,12 @@ def main():
     date = df["eventDate"].fillna("").str.slice(0, 10)
     df["visit"] = (df["datasetKey"] + "|" + df["decimalLatitude"].round(5).astype(str) + "|"
                    + df["decimalLongitude"].round(5).astype(str) + "|" + date)
+
+    # Natives only. Exotic records are kept apart for flagging expected weeds later.
+    st = classify(df["species"].unique())
+    df = df.join(st[["native", "nztcs_name", "bioStatus", "category"]], on="species")
+    df[~df["native"]].to_csv(root / "data" / f"records_{name}_exotic.csv.gz", index=False)
+    df = df[df["native"]].drop(columns="native"); steps["native"] = len(df)
 
     out = root / "data" / f"records_{name}.csv.gz"
     df.to_csv(out, index=False)

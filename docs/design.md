@@ -90,8 +90,15 @@ herbarium records, which have no absences, unless the area is widened.
 
 - **Cultivated records.** GBIF's simple CSV has no `establishmentMeans`, so
   planted collections get through. Known sites go in
-  `config/cultivated_sites.json`. A native-species filter (NZPCN or NZOR) is
-  still needed, and planted natives in gardens will remain a source of noise.
+  `config/cultivated_sites.json`. Planted natives in gardens and restoration
+  plantings remain a source of noise.
+- **Natives only (v0.5.0).** Native status comes from NZTCS through Occurd's
+  but-is-it-threatened resolver, with NZOR synonyms and hand-checked
+  overrides. It reads `../Occurd/nztcs.json` and
+  `../Occurd/but-is-it-threatened/`, so Rightree expects the Occurd repo next
+  to it. Unresolved names with few records still to check: Coprosma conferta,
+  Hypolepis tenuifolia, Hymenophyllum rarum (see
+  `data/native_status_<name>.csv`).
 
 ## Known pitfalls
 

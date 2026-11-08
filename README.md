@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.4.0). Records are loaded and tagged with environment,
+Status: prototype (v0.5.0). Native records are loaded and tagged with environment,
 land cover and wetlands; nothing predicts yet. See
 [`docs/design.md`](docs/design.md).
 
@@ -25,6 +25,7 @@ land cover and wetlands; nothing predicts yet. See
 
 ```bash
 python scripts/load_gbif.py data/<downloadkey>.zip <name>
+python scripts/native_status.py <name>      # review table of native verdicts
 python scripts/summarise_gbif.py <name>
 python scripts/fetch_env.py <name> <minlon,minlat,maxlon,maxlat> 50
 python scripts/fetch_gdc_wetlands.py <name>
@@ -32,7 +33,9 @@ python scripts/fetch_lcdb.py <name> <minlon,minlat,maxlon,maxlat> 50
 python scripts/tag_records.py <name>
 ```
 
-`fetch_gdc_wetlands.py` is Gisborne-only.
+`fetch_gdc_wetlands.py` is Gisborne-only. Native status needs Node and the
+Occurd repo checked out next to this one (it uses Occurd's NZTCS and NZOR name
+files and the but-is-it-threatened resolver).
 
 ## How it works (planned)
 

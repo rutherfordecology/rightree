@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.0 (November 2026)
+
+- Natives only. `scripts/native_status.py` decides native status for each
+  species. `scripts/resolve_names.mjs` resolves names with Occurd's
+  but-is-it-threatened resolver (NZOR synonyms first, then NZTCS exact,
+  prefix, nominate, typo and gender passes), and native means NZTCS
+  bioStatus Endemic or Non-endemic. Names NZTCS lacks count as exotic.
+- `config/native_overrides.json` fixes 16 natives the matcher missed, mostly
+  recent GBIF genus transfers NZTCS hasn't adopted (Shawia → Olearia,
+  Notelaea → Nestegis, Paratrophis microphylla → Streblus heterophyllus) and
+  lumps (Quintinia acutifolia → Q. serrata, Nertera granadensis → N. depressa).
+- `load_gbif.py` keeps natives in `records_<name>.csv.gz` and writes exotics
+  to `records_<name>_exotic.csv.gz`, for weed flags later. Records now carry
+  the NZTCS name, bioStatus and category. Gisborne: 14,334 native records of
+  448 species; 790 exotic records of 366 species set aside.
+
 ## v0.4.0 (November 2026)
 
 - Land cover: `scripts/fetch_lcdb.py` pulls LCDB v6 (1996–2023) polygons
