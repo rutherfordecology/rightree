@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.13.1 (November 2026)
+
+- The map page opens on aerial imagery (Satellite) instead of the street map.
+
 ## v0.13.0 (November 2026)
 
 - **Layers.** Each species gets the layers it can fill: canopy, subcanopy,
