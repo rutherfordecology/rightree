@@ -41,9 +41,16 @@ Each layer's licence needs checking before anything is published.
 - **GBIF:** presence-only. Filter to coordinate uncertainty of 100 m or
   better. It is biased towards roads, tracks and iNaturalist users, so the
   absence of a record is not evidence of absence.
-- **NVS (National Vegetation Survey Databank):** precisely located plots that
-  record presence and absence, strong on forest. Access needs a data request to
-  Manaaki Whenua. Probably the most valuable source if it can be obtained.
+- **NVS (National Vegetation Survey Databank):** precisely located plots, strong
+  on forest. Much of it is already on GBIF as dataset
+  `788439f0-3b56-11dc-8c19-b8a03c50a862` (doi:10.15468/uzxpbn): about 1.6
+  million records, about 1.5 million of them within 100 m uncertainty, and
+  about 48,000 in a Tairāwhiti bounding box (checked 2026-11-09). Each record
+  carries an `eventID` (the plot visit), so a plot can be treated as a complete
+  species list, which gives inferred absences. The licence is **CC BY-NC 4.0**,
+  so commercial or consulting use needs the owners' permission through Manaaki
+  Whenua. Restricted datasets not on GBIF need a request through
+  nvs.landcareresearch.co.nz (register, add to Request Cart, owner approval).
 - **Covenant species records are excluded.** They are private and must not be
   used for training, matching or output.
 
