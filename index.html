@@ -167,6 +167,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
       <span style="flex:1"></span>
       <button id="dlCsv" disabled title="Species lists for every unit and stage">Download species CSV</button>
       <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON">Units GeoJSON</button>
+      <button id="dlCheck" disabled title="Expected and likely species as a Word field checklist">Plant checklist (Word)</button>
     </div>
     <div id="polyList"></div>
     <div id="status" class="hint">Draw an area with the polygon or rectangle tool on the map, or load a file.</div>
@@ -389,7 +390,7 @@ function deleteArea() {
   if (editing && editing.editing) editing.editing.disable();
   editing = null; pendingFile = null; current = null;
   drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
-  document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true;
+  document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true; document.querySelector("#dlCheck").disabled = true;
   document.querySelector("#results").innerHTML = EMPTY_RESULTS;
   document.querySelector("#name").value = "";
   renderPolyList(); ready();
@@ -490,6 +491,131 @@ $("#dlCsv").onclick = () => {
   save("﻿" + [cols.join(",")].concat(rowsOut.map(s => cols.map(c => cell(s[c])).join(","))).join("\n"),
        `rightree_${current.id}_species.csv`, "text/csv");
 };
+// Field checklist (Word): every species rated Expected or Likely (plus
+// Possible if "Show possible" is ticked) in any unit and stage with enough
+// evidence, once each, grouped by its main layer. The docx library loads only
+// when the button is first used.
+const LK_RANK = {Expected: 0, Likely: 1, Possible: 2};
+const STAGE_CODE = {"Mature forest": "M", "Regenerating": "R", "Open ground": "O", "Wetland": "W"};
+function checklistData(j) {
+  const sp = new Map();
+  for (const r of j.species) {
+    const s = stageOf(r, j);
+    if (!s || !s.enough) continue;
+    const lk = likelihood(r, s);
+    if (lk === "Possible" && !showPossible) continue;
+    const e = sp.get(r.species) || {r, lk, stages: new Set(), units: new Set()};
+    if (LK_RANK[lk] < LK_RANK[e.lk]) e.lk = lk;
+    e.stages.add(STAGE_CODE[STAGE_SHORT[r.stage]] || "?"); e.units.add(r.unit);
+    sp.set(r.species, e);
+  }
+  const groups = LAYERS.map(([k, , nm]) => ({k, name: nm === "Climber or epiphyte" ? "Climbers and epiphytes" : nm, list: []}))
+    .concat([{k: "", name: "Other", list: []}]);
+  for (const e of sp.values()) {
+    const ls = layersOf(e.r);
+    (groups.find(g => g.k && ls.has(g.k)) || groups[groups.length - 1]).list.push(e);
+  }
+  for (const g of groups)
+    g.list.sort((a, b) => LK_RANK[a.lk] - LK_RANK[b.lk] || (a.r.common_name || a.r.species).localeCompare(b.r.common_name || b.r.species));
+  return {groups: groups.filter(g => g.list.length), n: sp.size};
+}
+let docxLib = null;
+const loadDocx = () => docxLib || (docxLib = new Promise((resolve, reject) => {
+  const s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/docx@9.5.1/dist/index.iife.js";
+  s.onload = () => resolve(window.docx);
+  s.onerror = () => { docxLib = null; reject(new Error("Couldn't load the Word library.")); };
+  document.head.appendChild(s);
+}));
+async function checklistDocx(j) {
+  const D = await loadDocx();
+  const {Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle,
+         AlignmentType, PageNumber, Footer, LevelFormat} = D;
+  const {groups, n} = checklistData(j);
+  const multi = j.units.length > 1, order = ["M", "R", "O", "W"];
+  const site = document.querySelector("#name").value.trim() || j.site || "Site";
+  const ha = j.units.reduce((a, u) => a + u.ha, 0);
+  const today = new Date().toLocaleDateString("en-NZ", {day: "numeric", month: "long", year: "numeric"});
+  const FONT = "Arial", SLATE = "263B27", GREY = "5F6B66";
+  const run = (text, o = {}) => new TextRun({text, font: FONT, size: o.size || 18, bold: o.bold, italics: o.italics, color: o.color});
+  const para = (runs, o = {}) => new Paragraph({children: Array.isArray(runs) ? runs : [runs], spacing: {before: 0, after: o.after ?? 60}, ...(o.p || {})});
+  // A4 with 15 mm margins: 11906 - 2 * 850 = 10206 twips of text width
+  const W = 10206;
+  const cols = multi ? [420, 3200, 1050, 750, 900, 1400, 2486] : [420, 3500, 1100, 800, 1500, 2886];
+  const heads = multi ? ["", "Species", "Likelihood", "Stage", "Unit", "Threat status", "Notes"]
+                      : ["", "Species", "Likelihood", "Stage", "Threat status", "Notes"];
+  const none = {style: BorderStyle.NONE, size: 0, color: "FFFFFF"};
+  const borders = {top: none, left: none, right: none, bottom: {style: BorderStyle.SINGLE, size: 4, color: "BBBBBB"}};
+  const margins = {top: 50, bottom: 50, left: 80, right: 80};
+  const cell = (children, w, o = {}) => new TableCell({children, width: {size: w, type: WidthType.DXA}, borders, margins, ...o});
+  const rows = [new TableRow({tableHeader: true, children: heads.map((h, i) => cell([para(run(h, {bold: true, size: 16}), {after: 0})], cols[i],
+    {borders: {...borders, bottom: {style: BorderStyle.SINGLE, size: 12, color: SLATE}}}))})];
+  for (const g of groups) {
+    rows.push(new TableRow({cantSplit: true, children: [cell(
+      [para([run(g.name + " ", {bold: true, color: "FFFFFF"}), run("(" + g.list.length + ")", {color: "FFFFFF"})], {after: 0})],
+      W, {columnSpan: cols.length, shading: {type: ShadingType.CLEAR, color: "auto", fill: SLATE}})]}));
+    for (const e of g.list) {
+      const r = e.r;
+      const name = r.common_name ? [para(run(r.common_name, {bold: true}), {after: 0}), para(run(r.species, {italics: true}), {after: 0})]
+                                 : [para(run(r.species, {italics: true}), {after: 0})];
+      const vals = [[para(run("☐", {size: 24}), {after: 0})], name, [para(run(e.lk), {after: 0})],
+        [para(run(order.filter(c => e.stages.has(c)).join(" ")), {after: 0})]];
+      if (multi) vals.push([para(run([...e.units].sort().join(", ")), {after: 0})]);
+      vals.push([para(run(THREAT(r.category) ? r.category : ""), {after: 0})], [para(run(""), {after: 0})]);
+      rows.push(new TableRow({cantSplit: true, children: vals.map((v, i) => cell(v, cols[i]))}));
+    }
+  }
+  const unitText = u => (multi ? "Unit " + u.unit + ": " : "") + u.ha.toLocaleString() + " ha, " + u.temp + " °C mean, " +
+    u.rain.toLocaleString() + " mm rain, slope " + u.slope + "°. Now: " +
+    Object.entries(u.covers).map(([k, v]) => k + " " + Math.round(v * 100) + "%").join(", ") + "." +
+    ((u.potential || []).length ? " Naturally: " + u.potential.map(p => p.name + " " + Math.round(p.share * 100) + "%").join(", ") + "." : "");
+  const unitLines = j.units.map(u => para(run(unitText(u)), {p: {numbering: {reference: "units", level: 0}}}));
+  const blankCell = t => new TableCell({width: {size: 3402, type: WidthType.DXA}, margins: {top: 200, bottom: 40, left: 0, right: 200},
+    borders: {top: none, left: none, right: none, bottom: {style: BorderStyle.SINGLE, size: 4, color: "999999"}},
+    children: [para(run(t, {color: GREY}), {after: 0})]});
+  const blanks = new Table({width: {size: W, type: WidthType.DXA}, columnWidths: [3402, 3402, 3402],
+    rows: [new TableRow({children: ["Surveyor", "Date", "Weather"].map(blankCell)})]});
+  const key = [run("Native species expected at the site, from where they grow in environmentally similar places nearby. ", {color: GREY}),
+    run("Expected", {bold: true, color: GREY}), run(": in 40%+ of similar survey plots. ", {color: GREY}),
+    run("Likely", {bold: true, color: GREY}), run(": in 15%+ of plots, or 3+ records. ", {color: GREY})];
+  if (showPossible) key.push(run("Possible", {bold: true, color: GREY}), run(": a single plot or one or two records. ", {color: GREY}));
+  key.push(run("Stage: M mature forest, R regenerating, O open ground, W wetland.", {color: GREY}));
+  const doc = new Document({
+    creator: "Rightree", title: "Plant checklist: " + site,
+    styles: {default: {document: {run: {font: FONT, size: 18}}}},
+    numbering: {config: [{reference: "units", levels: [{level: 0, format: LevelFormat.BULLET, text: "•", alignment: AlignmentType.LEFT,
+      style: {paragraph: {indent: {left: 360, hanging: 240}}}}]}]},
+    sections: [{
+      properties: {page: {size: {width: 11906, height: 16838}, margin: {top: 850, bottom: 850, left: 850, right: 850}}},
+      footers: {default: new Footer({children: [new Paragraph({alignment: AlignmentType.RIGHT, children: [
+        run("Rightree plant checklist: " + site + " · page ", {size: 14, color: GREY}),
+        new TextRun({children: [PageNumber.CURRENT], font: FONT, size: 14, color: GREY})]})]})},
+      children: [
+        para(run("Plant checklist: " + site, {bold: true, size: 32, color: SLATE}), {after: 40}),
+        para(run("Rightree " + document.querySelector("#ver").textContent + " · made " + today + " · " + ha.toLocaleString() +
+                 " ha · " + n + " species", {color: GREY}), {after: 120}),
+        blanks,
+        para(run(""), {after: 60}),
+        ...unitLines,
+        para(key, {after: 160}),
+        new Table({width: {size: W, type: WidthType.DXA}, columnWidths: cols, rows}),
+        para(run("A starting list to check on the ground, not a survey. Species records: GBIF.org (NVS, iNaturalist NZ, NZ herbaria); " +
+          "environment: NZEnvDS v1.1; land cover: LCDB v6; wetlands: GDC 2022; potential ecosystems: Eco-index Ecosystem Projector " +
+          "(CC BY 4.0); names and threat status: NZTCS. Rightree by Rutherford Ecology.", {size: 15, color: GREY}), {p: {spacing: {before: 200, after: 0}}}),
+      ],
+    }],
+  });
+  return Packer.toBlob(doc);
+}
+$("#dlCheck").onclick = async () => {
+  const b = $("#dlCheck"); b.disabled = true;
+  try {
+    const blob = await checklistDocx(current);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "rightree_" + current.id + "_checklist.docx"; a.click();
+  } catch (err) { setStatus(err.message || String(err), true); }
+  finally { b.disabled = false; }
+};
 $("#dlGeo").onclick = () => {
   const fc = JSON.parse(JSON.stringify(current.units_geojson));
   for (const f of fc.features) {
@@ -537,7 +663,7 @@ function attrsTable(u, units, groups, wvar) {
 }
 
 function show(j) {
-  current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false;
+  current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false; $("#dlCheck").disabled = false;
   resultLayer.clearLayers(); plotLayer.clearLayers();
   const multi = j.units.length > 1;
   // Units are drawn over the site; the site outline stays on top for reference.
@@ -549,7 +675,9 @@ function show(j) {
     ug.eachLayer(l => { const u = l.feature.properties.unit; if (seen.has(u)) return;
       let big = null, area = 0;
       ug.eachLayer(m => { if (m.feature.properties.unit !== u) return; const b = m.getBounds(); const a = (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()); if (a > area) { area = a; big = m; } });
-      seen.add(u); L.tooltip({permanent: true, direction: "center", className: "unit-label"}).setLatLng(big.getBounds().getCenter()).setContent("Unit " + u).addTo(resultLayer); });
+      const lp = l.feature.properties.label;   // inside the unit's largest patch (from the model)
+      seen.add(u); L.tooltip({permanent: true, direction: "center", className: "unit-label"})
+        .setLatLng(lp ? [lp[1], lp[0]] : big.getBounds().getCenter()).setContent("Unit " + u).addTo(resultLayer); });
   }
   if (!drawn.getLayers().length && ug.getLayers().length) L.geoJSON(j.units_geojson, {style: {color: AREA_COLOUR, weight: 2, fillOpacity: .1, fillColor: AREA_COLOUR}}).eachLayer(l => drawn.addLayer(l));
   drawn.bringToFront();
