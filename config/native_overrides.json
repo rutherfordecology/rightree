@@ -16,6 +16,16 @@
     "Urtica incisa": {"native": true, "nztcs_name": "Urtica sykesii", "why": "NZ plants once called U. incisa are U. sykesii in NZTCS (Non-endemic)"},
     "Hypolepis rugosula": {"native": true, "nztcs_name": null, "why": "native ring fern; NZTCS splits the NZ plants among other Hypolepis names"},
     "Fuchsia colensoi": {"native": true, "nztcs_name": null, "why": "native hybrid (F. excorticata x F. perscandens), not assessed by NZTCS"},
-    "Melicope mantellii": {"native": true, "nztcs_name": null, "why": "native hybrid (M. simplex x M. ternata), not assessed by NZTCS"}
+    "Melicope mantellii": {"native": true, "nztcs_name": null, "why": "native hybrid (M. simplex x M. ternata), not assessed by NZTCS"},
+    "Styphelia nesophila": {"native": true, "nztcs_name": "Leucopogon fraseri", "why": "GBIF genus transfer; NZTCS Leucopogon fraseri (Non-endemic)"},
+    "Coprosma pumila": {"native": true, "nztcs_name": "Coprosma perpusilla subsp. perpusilla", "why": "GBIF lumps C. perpusilla into C. pumila; NZTCS Coprosma perpusilla (Non-endemic)"},
+    "Chionochloa rubra": {"native": true, "nztcs_name": "Chionochloa rubra subsp. rubra var. rubra", "why": "red tussock; NZTCS lists only subspecies, nominate used (Endemic)"},
+    "Hymenophyllum rarum": {"native": true, "nztcs_name": "Hymenophyllum aff. rarum (AK 330262; New Zealand)", "why": "NZ plants are NZTCS Hymenophyllum aff. rarum (Endemic)"},
+    "Shawia nummularifolia": {"native": true, "nztcs_name": "Olearia nummulariifolia", "why": "GBIF genus transfer; NZTCS Olearia nummulariifolia (Endemic)"},
+    "Shawia arborescens": {"native": true, "nztcs_name": "Olearia arborescens", "why": "GBIF genus transfer; NZTCS Olearia arborescens (Endemic)"},
+    "Shawia virgata": {"native": true, "nztcs_name": "Olearia virgata", "why": "GBIF genus transfer; NZTCS Olearia virgata (Endemic)"},
+    "Anthosachne scabra": {"native": true, "why": "native blue wheatgrass (NZ and Australia), not in NZTCS"},
+    "Coprosma conferta": {"native": true, "why": "endemic Coprosma, not in NZTCS"},
+    "Celmisia pseudolyallii": {"native": true, "why": "endemic mountain daisy, not in NZTCS"}
   }
 }

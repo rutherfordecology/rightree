@@ -83,7 +83,8 @@ MIN_PLOTS_FB, MIN_OBS_FB = 3, 10
 UNIT_MIN_D, UNIT_MIN_SHARE = 0.05, 0.10
 MAX_CELLS = 20_000      # largest area accepted, in 100 m cells (ha)
 ON_SITE_BUFFER_M = 100  # records this close to the site are left out of the evidence
-NATURAL_WETLAND = {"NPS:FW Natural Wetland", "NPS Natural", "Induced"}
+NATURAL_WETLAND = {"NPS:FW Natural Wetland", "NPS Natural", "Induced",   # GDC survey
+                   "FENZ current wetland"}                             # FENZ (other regions)
 
 
 def transform_vals(df):
@@ -365,26 +366,27 @@ def main():
         rec.loc[merge, "category"] = rec.loc[merge, "name"].map(cat["category"])
         rec.loc[merge, "bioStatus"] = rec.loc[merge, "name"].map(cat["bioStatus"])
     # Common names: Occurd's NZTCS file locally, or the slim copy bundled
-    # for hosting (data/nztcs_names.json, made by scripts/build_space.py).
+    # for hosting (data/nztcs_names.json, made by scripts/build_site.py).
     names_path = ROOT / "data" / "nztcs_names.json"
     if not names_path.exists():
         names_path = ROOT.parent / "Occurd" / "nztcs.json"
     nztcs = json.loads(names_path.read_text(encoding="utf-8"))
-    common = {}
-    for v in nztcs.values():
-        if isinstance(v, dict) and v.get("name"):
-            cn = v.get("maori") or v.get("common")
-            if cn:
-                common.setdefault(clean_name(v["name"]), cn)
-    # A species-level name NZTCS only lists by subspecies or variety takes the
-    # nominate's common name (Piper excelsum -> kawakawa, from subsp. excelsum),
-    # never another subspecies' (subsp. delangei is de Lange's kawakawa).
-    for v in nztcs.values():
-        if isinstance(v, dict) and v.get("name"):
-            w = v["name"].split()
-            cn = v.get("maori") or v.get("common")
-            if cn and len(w) >= 4 and w[3] == w[1]:
-                common.setdefault(" ".join(w[:2]), cn)
+    # Māori and English names kept apart (the checklist shows both); the
+    # display name prefers the Māori one.
+    maori_names, english_names = {}, {}
+    for key, d in (("maori", maori_names), ("common", english_names)):
+        for v in nztcs.values():
+            if isinstance(v, dict) and v.get("name") and v.get(key):
+                d.setdefault(clean_name(v["name"]), v[key])
+        # A species-level name NZTCS only lists by subspecies or variety takes the
+        # nominate's name (Piper excelsum -> kawakawa, from subsp. excelsum),
+        # never another subspecies' (subsp. delangei is de Lange's kawakawa).
+        for v in nztcs.values():
+            if isinstance(v, dict) and v.get("name") and v.get(key):
+                w = v["name"].split()
+                if len(w) >= 4 and w[3] == w[1]:
+                    d.setdefault(" ".join(w[:2]), v[key])
+    common = {s: maori_names.get(s) or english_names.get(s) for s in set(maori_names) | set(english_names)}
 
     def label(s):
         c = common.get(s)
@@ -514,7 +516,8 @@ def main():
             report.append("")
             for s, r in tab.iterrows():
                 rows_out.append({"unit": u + 1, "stage": stage, "tier": tier, "species": s,
-                                 "common_name": common.get(s), "plot_freq": round(r.plot_freq, 3),
+                                 "common_name": common.get(s), "maori_name": maori_names.get(s),
+                                 "english_name": english_names.get(s), "plot_freq": round(r.plot_freq, 3),
                                  "n_plots": n_plots, "obs_share": round(r.obs_share, 3), "n_obs": len(onear),
                                  "nearest_plot_distance": round(nearest, 3)})
 
@@ -541,7 +544,8 @@ def main():
                 report.append("- Most recorded: " + ", ".join(f"{label(s)} {v:.0%}" for s, v in wshare.head(20).items()))
                 for s, v in wshare.items():
                     rows_out.append({"unit": u + 1, "stage": "Wetland", "tier": tier, "species": s,
-                                     "common_name": common.get(s), "plot_freq": 0, "n_plots": 0,
+                                     "common_name": common.get(s), "maori_name": maori_names.get(s),
+                                     "english_name": english_names.get(s), "plot_freq": 0, "n_plots": 0,
                                      "obs_share": round(v, 3), "n_obs": len(wnear), "nearest_plot_distance": np.nan})
             else:
                 report.append("- **Not enough similar wetland records for a list, even allowing weaker matches.**")

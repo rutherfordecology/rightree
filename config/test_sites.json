@@ -1,6 +1,10 @@
 {
-  "_note": "Check sites for predict.py (Gisborne). Run: python scripts/predict.py tairawhiti <name> \"<wkt>\"",
+  "_note": "Check sites for predict.py. Run: python scripts/predict.py <region> <name> \"<wkt>\" (region tairawhiti for test-*, hawkesbay for hb-*)",
   "test-flats": "POLYGON((177.90 -38.60, 177.925 -38.60, 177.925 -38.58, 177.90 -38.58, 177.90 -38.60))",
   "test-ranges": "POLYGON((177.28 -38.60, 177.31 -38.60, 177.31 -38.575, 177.28 -38.575, 177.28 -38.60))",
-  "test-coast": "POLYGON((178.03 -38.685, 178.06 -38.685, 178.06 -38.665, 178.03 -38.665, 178.03 -38.685))"
+  "test-coast": "POLYGON((178.03 -38.685, 178.06 -38.685, 178.06 -38.665, 178.03 -38.665, 178.03 -38.685))",
+  "hb-plains": "POLYGON((176.80 -39.63, 176.83 -39.63, 176.83 -39.61, 176.80 -39.61, 176.80 -39.63))",
+  "hb-kaweka": "POLYGON((176.36 -39.30, 176.39 -39.30, 176.39 -39.275, 176.36 -39.275, 176.36 -39.30))",
+  "hb-boundary-stream": "POLYGON((176.79 -39.11, 176.82 -39.11, 176.82 -39.09, 176.79 -39.09, 176.79 -39.11))",
+  "hb-coast": "POLYGON((177.00 -39.66, 177.03 -39.66, 177.03 -39.64, 177.00 -39.64, 177.00 -39.66))"
 }
