@@ -9,8 +9,20 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: concept and design (v0.0.1). Nothing runs yet. See
-[`docs/design.md`](docs/design.md).
+Status: prototype (v0.1.0). Occurrence data loads and summarises; nothing
+predicts yet. See [`docs/design.md`](docs/design.md).
+
+## Loading occurrence data
+
+1. In Occurd's Big Data Mode, draw the area, tick Angiosperms, Gymnosperms and
+   Ferns & allies, clear the From date, and fetch.
+2. Save GBIF's zip, keeping its name (`<downloadkey>.zip`), in `data/`.
+3. Run:
+
+```bash
+python scripts/load_gbif.py data/<downloadkey>.zip <name>
+python scripts/summarise_gbif.py <name>
+```
 
 ## How it works (planned)
 
