@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.7.0). First predictions run; native records are tagged with environment,
+Status: prototype (v0.8.0). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
@@ -49,15 +49,18 @@ Writes `report.md`, `species.csv` and `units.geojson` to
 ## How it works
 
 1. **Units.** The polygon's 100 m cells are split into 1–4 units that differ
-   in climate, terrain and soil (only when the split is clear). Sea and
-   no-data cells are dropped.
+   in climate, terrain and soil. A split is kept only when it is clear, each
+   unit is at least 10% of the site, and units are at least 0.05 apart. Sea
+   and no-data cells are dropped.
 2. **Similar sites.** Each unit is compared with every record's site using a
    Gower distance (climate, terrain and soil weighted equally). A site counts
    only if it is close overall and no more than a quarter of the regional range
    away in temperature, frost, rainfall or distance to the coast.
 3. **Stages.** Similar sites are split by their land cover when recorded:
    mature forest; regenerating hardwoods, mānuka/kānuka and scrub; and open
-   ground. That gives a succession sequence.
+   ground. That gives a succession sequence. NVS plots that LCDB maps as
+   open but that recorded forest canopy or woody genera are moved to the
+   forest stages, because LCDB misses small remnants.
 4. **Lists.** Plot share is the share of the closest NVS plots that recorded
    each species; plots list everything present, so this is the strongest
    evidence. Observation share is the same from iNaturalist and herbarium

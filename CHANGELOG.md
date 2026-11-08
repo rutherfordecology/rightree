@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.8.0 (November 2026)
+
+- **NVS plots are staged by what they recorded**, not only by LCDB. LCDB maps
+  down to about 1 ha, so a plot in a small forest remnant can sit in a
+  polygon mapped as pasture. That put forest plots (kahikatea, kohekohe,
+  tōtara) into the "Open" lists. A plot LCDB calls open, or an excluded cover,
+  is now treated as:
+  - mature forest if it records 3 or more forest canopy genera;
+  - regenerating if it records 4 or more woody genera.
+  The genus lists are in `config/plot_stage_indicators.json`. In Gisborne 16
+  plots moved.
+- **Units split only when the difference matters.** Each unit must hold at
+  least 10% of the cells, and every pair of units must be at least 0.05 apart
+  in Gower distance (a third of the analogue threshold). Otherwise the site
+  stays whole. A 1 km square of Waimata valley pasture had been cut into 4
+  near-identical units; it is now one. The flats test is now one unit
+  (closest split 0.045 apart). The coast test drops a 5% sliver. The ranges
+  still split into 3 (0.11 apart).
+- `predict.py` prints the silhouette, smallest unit and gap for each split it
+  tries.
+- Known gap: "Open" lists built from observations still include woody
+  species, because iNaturalist records in small remnants are mapped as
+  pasture. They are flagged as observation-only.
+
 ## v0.7.0 (November 2026)
 
 - **Best-available fallback.** If a stage has fewer than 5 close plots

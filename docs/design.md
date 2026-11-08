@@ -127,6 +127,12 @@ Close analogues are within Gower 0.15. When a stage has none, the nearest sites 
 
 Records in or within 100 m of the site are dropped. On-site iNat records (cabbage tree, karo, wharangi, mānuka) were likely plantings, and 4 of them sat just outside the drawn line.
 
+## Plot stages and unit splits (v0.8.0)
+
+Plot stage from LCDB alone put forest plots into "Open", because LCDB's roughly 1 ha minimum misses small remnants. Plots LCDB calls open or excluded are now re-staged from their recorded genera (`config/plot_stage_indicators.json`): 3 or more canopy genera means mature forest, and 4 or more woody genera means regenerating. Genus lists are a stopgap. Growth form isn't in NZTCS, so a proper fix needs a growth-form table (e.g. the NVS species attribute list). Observations can't be re-staged this way, because a single record says nothing about the stand.
+
+Unit splits are kept only if every unit holds at least 10% of the cells and the closest pair of unit medians is at least 0.05 Gower apart. Below that, units pick nearly the same analogues and just repeat lists.
+
 ## Plan
 
 1. **Prototype (Python notebook), one region:** build the grid, attach the

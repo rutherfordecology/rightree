@@ -76,6 +76,9 @@ MIN_OBS = 20        # ...and fewer close observations than this: fall back
 # vegetation is left): nearest sites that still pass the veto, flagged.
 FALLBACK_D = 0.35
 MIN_PLOTS_FB, MIN_OBS_FB = 3, 10
+# Units: split only if each unit holds at least UNIT_MIN_SHARE of the cells and
+# every pair is at least UNIT_MIN_D apart (a third of the analogue threshold).
+UNIT_MIN_D, UNIT_MIN_SHARE = 0.05, 0.10
 ON_SITE_BUFFER_M = 100  # records this close to the site are left out of the evidence
 NATURAL_WETLAND = {"NPS:FW Natural Wetland", "NPS Natural", "Induced"}
 
@@ -149,6 +152,12 @@ def region_stats(env_dir, inside, n=200_000, seed=1):
     return lo, (hi - lo).replace(0, 1)
 
 
+def gower(a, b):
+    """Gower distance between two vectors, no veto."""
+    ok = ~(np.isnan(a) | np.isnan(b))
+    return float((np.abs(a - b)[ok] * WEIGHTS[ok]).sum() / max(WEIGHTS[ok].sum(), 1e-9))
+
+
 def dist(a, B):
     """Gower distance from vector a to rows of B: weighted mean absolute
     difference in range units, ignoring missing values. 0 = identical,
@@ -188,6 +197,28 @@ def stage_of(cover):
         if cover in covers:
             return s
     return None
+
+
+MATURE, REGEN = list(STAGES)[0], list(STAGES)[1]
+
+
+def restage_plots(stage, visit_species):
+    """LCDB's minimum mapping unit is 1 ha, so a plot in a forest remnant can
+    sit in polygons mapped as pasture. Plots that LCDB calls open (or an
+    excluded cover) but that record several forest canopy genera are mature
+    forest; with several woody genera, regenerating."""
+    ind = json.loads((ROOT / "config" / "plot_stage_indicators.json").read_text(encoding="utf-8"))
+    mature, woody = set(ind["mature_canopy"]), set(ind["mature_canopy"]) | set(ind["woody"])
+    out, n = stage.copy(), 0
+    for v, st in stage.items():
+        if st in (MATURE, REGEN):
+            continue
+        genera = {s.split()[0] for s in visit_species[v]}
+        new = (MATURE if len(genera & mature) >= ind["min_mature"]
+               else REGEN if len(genera & woody) >= ind["min_woody"] else st)
+        if new != st:
+            out[v], n = new, n + 1
+    return out, n
 
 
 def main():
@@ -235,6 +266,15 @@ def main():
                 break
             lab = KMeans(k, n_init=10, random_state=1).fit_predict(Zv)
             s = silhouette_score(Zv, lab, sample_size=min(3000, len(Zv)), random_state=1)
+            # A clean split can still be a trivial one. Keep it only if every
+            # unit is a real share of the site and every pair of units is far
+            # enough apart to change which analogues are picked.
+            meds = [np.nanmedian(Z[valid][lab == j], axis=0) for j in range(k)]
+            gap = min(gower(meds[i], meds[j]) for i in range(k) for j in range(i + 1, k))
+            small = np.bincount(lab).min() / len(lab)
+            print(f"  k={k}: silhouette {s:.2f}, smallest unit {small:.0%}, closest units {gap:.3f} apart")
+            if gap < UNIT_MIN_D or small < UNIT_MIN_SHARE:
+                continue
             if s > best_s:
                 best_k, best_s, best_lab = k, s, lab
         if best_k > 1:
@@ -289,6 +329,8 @@ def main():
                                       year=("year", "first"))
     visit_Z = rec_Z[visits["idx"].to_numpy()]
     visit_species = nvs.groupby("visit")["name"].agg(set)
+    visits["stage"], n_restaged = restage_plots(visits["stage"], visit_species)
+    print(f"Re-staged {n_restaged} NVS plots from what they recorded (LCDB said open or excluded cover)")
     # typical NN spread among plots, to judge how close a unit's analogues are
     obs = rec[rec["source"] != "NVS"]
     nat_wl = rec["gdc_wl_status"].isin(NATURAL_WETLAND)
