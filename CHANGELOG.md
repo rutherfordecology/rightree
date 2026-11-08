@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.12.1 (November 2026)
+
+- The map page shows the version next to the title. `serve.py` reads it from
+  the newest CHANGELOG entry (`/api/version`).
+
 ## v0.12.0 (November 2026)
 
 - The map page lists the site area under the buttons, like Occurd's

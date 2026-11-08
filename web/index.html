@@ -27,6 +27,7 @@ body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); di
 #side { display: flex; flex-direction: column; border-right: 1px solid var(--rule); min-height: 0; }
 header { padding: 14px 18px 12px; background: var(--slate); color: #fff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) header { background: #263b27; } }
+header h1 .ver { font-size: 12px; font-weight: 500; opacity: .75; margin-left: 4px; }
 header h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: .2px; }
 header p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
 #controls { padding: 12px 18px; border-bottom: 1px solid var(--rule); display: grid; gap: 8px; }
@@ -127,7 +128,7 @@ a.sp:hover { color: var(--slate); border-bottom-color: var(--slate); }
 <body>
 <aside id="side">
   <header>
-    <h1>Rightree</h1>
+    <h1>Rightree <span id="ver" class="ver"></span></h1>
     <p>Native plants expected at a site, from where they grow in similar places nearby.</p>
   </header>
   <div id="controls">
@@ -537,6 +538,7 @@ function drawPlots(s) {
 }
 
 (async () => {
+  fetch("/api/version").then(r => r.json()).then(v => { if (v.version) document.querySelector("#ver").textContent = v.version; }).catch(() => {});
   const regions = await (await fetch("/api/regions")).json();
   $("#region").innerHTML = Object.keys(regions).map(k => `<option value="${k}">${k}</option>`).join("");
   const k = Object.keys(regions)[0];

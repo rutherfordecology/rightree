@@ -53,6 +53,9 @@ class Handler(SimpleHTTPRequestHandler):
                 hit = json.loads((ROOT / "data" / "env" / r / "region_osm_nominatim.json").read_text(encoding="utf-8"))[0]
                 out[r] = {"name": hit.get("display_name", r), "geojson": hit["geojson"]}
             return self.send_json(out)
+        if self.path == "/api/version":
+            m = re.search(r"^## (v[\d.]+)", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)
+            return self.send_json({"version": m.group(1) if m else None})
         if self.path == "/api/runs":
             runs = []
             for d in sorted(PRED.glob("*/report.json"), key=lambda p: p.stat().st_mtime, reverse=True):
