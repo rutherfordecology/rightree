@@ -4,10 +4,10 @@ browser by Pyodide) and only the data a prediction needs. No server code.
 Usage:
     python scripts/build_site.py [target]        # default: site/ (gitignored)
 
-Serve the folder with any static host (a Hugging Face static Space, GitHub
-Pages, Cloudflare Pages) or locally with `python scripts/serve.py`. If the
-target is a git clone (e.g. of the Space), its .git is kept and everything
-else replaced, so commit and push there to publish.
+Serve the folder with any static host (GitHub Pages, from the gh-pages
+branch) or locally with `python scripts/serve.py`. If the target is a git
+checkout, its .git is kept and everything else replaced, so commit and push
+there to publish.
 """
 import json
 import re
@@ -18,27 +18,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PY = ["predict.py", "gridio.py", "nztm.py"]
 
-SPACE_README = """---
-title: Rightree
-emoji: 🌳
-colorFrom: green
-colorTo: gray
-sdk: static
-app_file: index.html
-pinned: false
-short_description: Native plants expected at a site in Tairāwhiti
----
-
-# Rightree
+SITE_README = """# Rightree
 
 Right tree, right place. Draw a site in Tairāwhiti (Gisborne) and get the
 native plant species expected there, from where they grow in environmentally
 similar places nearby. The model runs in your browser.
 
-Source code: https://github.com/rutherfordecology/rightree. This Space is
-built by `scripts/build_site.py`; don't edit it here.
+Source code: https://github.com/rutherfordecology/rightree (main branch).
+This branch is built by `scripts/build_site.py`; don't edit it here.
 
-## Data in this Space
+## Data on this site
 
 Each dataset keeps its own licence:
 
@@ -112,10 +101,8 @@ def main():
 
     (target / "site.json").write_text(json.dumps(site, ensure_ascii=False), encoding="utf-8")
     (target / "files.json").write_text(json.dumps(preload), encoding="utf-8")
-    (target / "README.md").write_text(SPACE_README, encoding="utf-8")
-    # Hugging Face keeps binary files in LFS/Xet
-    (target / ".gitattributes").write_text("*.bin filter=lfs diff=lfs merge=lfs -text\n"
-                                           "*.gz filter=lfs diff=lfs merge=lfs -text\n", encoding="utf-8")
+    (target / "README.md").write_text(SITE_README, encoding="utf-8")
+    (target / ".nojekyll").write_text("", encoding="utf-8")     # GitHub Pages: serve files as they are
 
     files = [p for p in target.rglob("*") if p.is_file() and ".git" not in p.parts]
     print(f"Built {target}: {len(files)} files, {sum(p.stat().st_size for p in files) / 1e6:.1f} MB, "

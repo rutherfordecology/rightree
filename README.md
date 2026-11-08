@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.16.0). First predictions run; native records are tagged with environment,
+Status: prototype (v0.16.1). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
@@ -63,10 +63,10 @@ the page also loads Python and its packages (about 30 MB, cached after).
 python scripts/build_site.py <folder>
 ```
 
-Writes the static site (about 47 MB, mostly tiles) to `<folder>`, keeping a
-`.git` there, plus a README for a Hugging Face static Space and a
-`.gitattributes` that sends tiles and records through Git LFS. Commit and
-push the folder to publish. Areas over 20,000 ha are refused.
+Writes the static site (about 48 MB, mostly tiles) to `<folder>`, keeping a
+`.git` there. Commit and push the folder to the `gh-pages` branch to publish
+on GitHub Pages. Visitors see a welcome note first; nothing large downloads
+until they accept. Areas over 20,000 ha are refused.
 
 ### From the command line
 

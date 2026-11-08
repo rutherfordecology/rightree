@@ -114,6 +114,13 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
 #map { height: 100%; }
 #busy { position: absolute; inset: 0; background: rgba(0,0,0,.25); display: none; align-items: center; justify-content: center; z-index: 1300; }
 #busy div { background: var(--bg); color: var(--ink); padding: 14px 18px; border: 1px solid var(--slate); }
+#welcome { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+#welcome .box { background: var(--bg); color: var(--ink); border: 1px solid var(--slate); max-width: 460px; width: 100%; }
+#welcome h2 { margin: 0; padding: 14px 18px 12px; background: var(--slate); color: #fff; font-size: 18px; }
+#welcome .body { padding: 14px 18px 16px; }
+#welcome p { margin: 0 0 10px; }
+#welcome .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+#welcome .primary { background: var(--slate); color: #fff; }
 
 /* Occurd's Leaflet / Leaflet.draw overrides */
 .leaflet-container { font-family: var(--font); }
@@ -205,6 +212,19 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
     <button id="cancelDrawBtn">&#x2715; Cancel</button>
   </div>
   <div id="busy"><div id="busyText">Predicting…</div></div>
+</div>
+<div id="welcome" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+  <div class="box">
+    <h2 id="welcomeTitle">Welcome to Rightree</h2>
+    <div class="body">
+      <p>Rightree lists the native plants expected at a site in Tairāwhiti, from where they grow in similar places nearby.</p>
+      <p>The model runs in your browser, so nothing you draw leaves your computer. To do that it downloads about
+        <b>45 MB once</b> (Python and its maths libraries), which your browser keeps for next time. Each site then
+        loads a few MB of map data.</p>
+      <p>On a mobile connection you may want to wait for Wi-Fi.</p>
+      <div class="actions"><button id="welcomeLater">Not now</button><button id="welcomeOk" class="primary">Accept and load</button></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -408,21 +428,43 @@ function kmlToGeoJSON(text) {
   return {type: "Feature", properties: {}, geometry: {type: "MultiPolygon", coordinates: polys}};
 }
 
-// The model runs in a Web Worker (Pyodide). It starts loading as soon as the
-// page opens, so it is usually ready by the time an area is drawn.
-const worker = new Worker("worker.js");
-let pending = null;
-worker.onmessage = e => {
-  const m = e.data;
-  if (m.type === "status") { $("#busyText").textContent = m.text === "Ready" ? "Predicting…" : m.text; return; }
-  if (!pending) return;
-  const {resolve, reject} = pending; pending = null;
-  m.type === "result" ? resolve(m.report) : reject(new Error(m.message));
+// The model runs in a Web Worker (Pyodide). Nothing large downloads until
+// the visitor accepts the welcome note; after that it starts loading at once,
+// so it is usually ready by the time an area is drawn. The choice is
+// remembered in this browser.
+const ACCEPT_KEY = "rightree-accepted";
+let worker = null, pending = null;
+function startWorker() {
+  if (worker) return;
+  worker = new Worker("worker.js");
+  worker.onmessage = e => {
+    const m = e.data;
+    if (m.type === "status") { $("#busyText").textContent = m.text === "Ready" ? "Predicting…" : m.text; return; }
+    if (!pending) return;
+    const {resolve, reject} = pending; pending = null;
+    m.type === "result" ? resolve(m.report) : reject(new Error(m.message));
+  };
+  worker.onerror = e => { if (pending) { pending.reject(new Error(e.message || "The model failed to load.")); pending = null; } };
+}
+const predict = body => new Promise((resolve, reject) => { startWorker(); pending = {resolve, reject}; worker.postMessage({body}); });
+let accepted = false;
+try { accepted = localStorage.getItem(ACCEPT_KEY) === "1"; } catch (e) {}
+let afterAccept = null;
+function askToLoad(then) { afterAccept = then || null; $("#welcome").style.display = "flex"; $("#welcomeOk").focus(); }
+$("#welcomeOk").onclick = () => {
+  accepted = true;
+  try { localStorage.setItem(ACCEPT_KEY, "1"); } catch (e) {}
+  $("#welcome").style.display = "none"; startWorker();
+  const f = afterAccept; afterAccept = null; if (f) f();
 };
-worker.onerror = e => { if (pending) { pending.reject(new Error(e.message || "The model failed to load.")); pending = null; } };
-const predict = body => new Promise((resolve, reject) => { pending = {resolve, reject}; worker.postMessage({body}); });
+$("#welcomeLater").onclick = () => {
+  afterAccept = null; $("#welcome").style.display = "none";
+  setStatus("Rightree needs a one-off download before it can predict. Press Predict when you're ready.");
+};
+if (accepted) startWorker(); else askToLoad();
 
 $("#run").onclick = async () => {
+  if (!accepted) return askToLoad(() => $("#run").click());
   finishEdit();
   const body = {name: $("#name").value, region: $("#region").value};
   if (pendingFile) Object.assign(body, {file_name: pendingFile.name, file_b64: pendingFile.b64});

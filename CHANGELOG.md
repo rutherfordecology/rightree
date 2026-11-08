@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.16.1 (November 2026)
+
+- **Welcome note.** The page explains that the model runs in the browser and
+  needs a one-off download of about 45 MB (then a few MB per site), and
+  loads nothing large until the visitor accepts. The choice is remembered
+  in that browser; "Not now" leaves the map usable and Predict asks again.
+- The site build targets GitHub Pages (`.nojekyll`) instead of a Hugging
+  Face Space: no Space front matter and no Git LFS rules.
+
 ## v0.16.0 (November 2026)
 
 - **Potential natural ecosystem.** Each unit card shows the ecosystem
