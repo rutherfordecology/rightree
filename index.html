@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
-/* Colours, type and map controls follow Occurd's visual style. */
+/* Colours, type and map controls: Rutherford Ecology house style. */
 :root {
   --slate: #263b27; --grey: #5F6B66; --ink: #000; --bg: #fff; --rule: #d5d9d7; --hover: #eef0ef;
   --close: #263b27; --best: #a15c00; --best-soft: #fff4e3; --soft: #eef0ef; --threat: #a1261b;
@@ -40,7 +40,22 @@ button:hover, .btn:hover { background: var(--hover); }
 button.primary { background: #263b27; color: #fff; border-color: #263b27; font-weight: 600; }
 button:disabled { opacity: .4; cursor: default; }
 .hint { color: var(--grey); font-size: 12.5px; }
-/* Area list, as Occurd's drawn-polygon list */
+/* Upload area: a dashed drop zone; Predict below it */
+.dropzone { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; white-space: normal;
+  padding: 12px 14px; border: 1.5px dashed var(--slate); background: var(--bg); font-weight: 400; }
+.dropzone.over { background: var(--hover); border-style: solid; }
+.dz-icon { font-size: 20px; line-height: 1; color: var(--slate); }
+button.run { width: 100%; padding: 9px 12px; }
+/* Download area: its own shaded panel under the controls */
+#downloads { padding: 10px 18px 12px; background: var(--soft); border-bottom: 1px solid var(--rule); border-left: 4px solid var(--slate); }
+#downloads.off { border-left-color: var(--rule); }
+.dl-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.dl-head .hint { margin-left: auto; }
+.dl-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dl-row button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; white-space: normal; text-align: left; }
+.dl-row button span { font-size: 11.5px; color: var(--grey); font-weight: 400; }
+@media (max-width: 700px) { .dl-row { grid-template-columns: 1fr; } }
+/* Area list */
 #polyList:empty { display: none; }
 .poly-item { display: flex; align-items: center; gap: 6px; padding: 4px 0 4px 10px; border-left: 3px solid #C8611A; font-size: 13px; }
 .poly-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
@@ -124,7 +139,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
 #welcome .regpick { display: flex; gap: 10px; align-items: center; margin: 4px 0 12px; font-weight: 600; }
 #welcome .regpick select { flex: 1; }
 
-/* Occurd's Leaflet / Leaflet.draw overrides */
+/* Leaflet / Leaflet.draw overrides */
 .leaflet-container { font-family: var(--font); }
 .leaflet-bar, .leaflet-touch .leaflet-bar, .leaflet-control-layers, .leaflet-touch .leaflet-control-layers {
   border-radius: 0 !important; box-shadow: none !important; border: 1px solid #263b27 !important; }
@@ -155,29 +170,34 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
 <aside id="side">
   <header>
     <h1>Rightree <span id="ver" class="ver"></span></h1>
-    <p>Native plants expected at a site, from where they grow in similar places nearby.</p>
   </header>
   <div id="controls">
     <div class="row">
       <input id="name" type="text" placeholder="Site name (optional)">
       <select id="region" title="Region data"></select>
     </div>
-    <div class="row">
-      <button id="load" title="Load a KML, KMZ or GeoJSON, e.g. exported from Occurd">Load file…</button>
-      <input id="file" type="file" accept=".kml,.kmz,.geojson,.json" hidden>
-      <button id="run" class="primary" disabled>Predict</button>
-      <span style="flex:1"></span>
-      <button id="dlCsv" disabled title="Species lists for every unit and stage">Download species CSV</button>
-      <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON">Units GeoJSON</button>
-      <button id="dlCheck" disabled title="Expected and likely species as a Word field checklist">Plant checklist (Word)</button>
-    </div>
+    <button id="load" class="dropzone" title="Load a KML, KMZ or GeoJSON">
+      <span class="dz-icon" aria-hidden="true">⇪</span>
+      <span><b>Upload a site boundary</b><br><span class="hint">Drop a KML, KMZ or GeoJSON here, or click to choose. Or draw on the map.</span></span>
+    </button>
+    <input id="file" type="file" accept=".kml,.kmz,.geojson,.json" hidden>
     <div id="polyList"></div>
+    <button id="run" class="primary run" disabled>Predict</button>
     <div id="status" class="hint">Draw an area with the polygon or rectangle tool on the map, or load a file.</div>
   </div>
+  <section id="downloads" class="off" aria-label="Download results">
+    <div class="dl-head"><span class="dz-icon" aria-hidden="true">⇩</span> <b>Download results</b>
+      <span class="hint" id="dlHint">Available after Predict.</span></div>
+    <div class="dl-row">
+      <button id="dlCheck" disabled title="Expected and likely species as a Word field checklist"><b>Plant checklist</b><span>Word</span></button>
+      <button id="dlCsv" disabled title="Species lists for every unit and stage"><b>Species lists</b><span>CSV</span></button>
+      <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON"><b>Units map</b><span>GeoJSON</span></button>
+    </div>
+  </section>
   <div id="results">
     <div class="empty">
       <ol>
-        <li>Draw your site with the tools at the top left of the map, or load a KML exported from Occurd.</li>
+        <li>Draw your site with the tools at the top left of the map, or load a KML, KMZ or GeoJSON file.</li>
         <li>Press <b>Predict</b>.</li>
         <li>If the site holds distinct habitats it is split into units, mapped and described. Each unit gets lists for
           <b>mature forest</b>, <b>regenerating</b> (kānuka, scrub, young hardwoods) and <b>open ground</b>, plus a
@@ -235,9 +255,9 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
 const LOOKLIKE = "https://occurd.rutherfordecology.co.nz/looklike/";
-const AREA_COLOUR = "#C8611A";            // Occurd's first drawn-area colour
+const AREA_COLOUR = "#C8611A";            // drawn-area colour
 const DRAW_STYLE = {color: "#FF8C00", fillColor: "#FF8C00", fillOpacity: 0.1, weight: 3};
-const UNIT_COLOURS = ["#2c5f8a", "#8a2c2c", "#5a2a7a", "#1a5a6a"];   // Occurd's polygon palette
+const UNIT_COLOURS = ["#2c5f8a", "#8a2c2c", "#5a2a7a", "#1a5a6a"];   // unit palette
 const STAGE_SHORT = {"Mature forest": "Mature forest", "Regenerating (hardwoods, mānuka/kānuka, scrub)": "Regenerating",
   "Open (grassland, riverbed, coast)": "Open ground", "Wetland": "Wetland"};
 const STAGE_HELP = {
@@ -283,7 +303,7 @@ function fmtVal(v, k) {
   return (+v).toLocaleString(undefined, {minimumFractionDigits: dp, maximumFractionDigits: dp}) + (unit && unit !== "class" ? " " + unit : "");
 }
 
-// ── Map: Occurd's basemaps and draw tools ──────────────────────────────────
+// ── Map: basemaps and draw tools ──────────────────────────────────────────
 const map = L.map("map").setView([-38.4, 177.9], 9);
 const tile = {maxZoom: 19, keepBuffer: 4};
 const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {...tile, attribution: "&copy; OpenStreetMap contributors"});
@@ -311,7 +331,7 @@ const drawControl = new L.Control.Draw({
          polyline: false, circle: false, circlemarker: false, marker: false}
 }).addTo(map);
 
-// Finish / Undo / Cancel bar and segment lengths while drawing (as in Occurd)
+// Finish / Undo / Cancel bar and segment lengths while drawing
 const bar = $("#drawActionBar"), finishBtn = $("#finishDrawBtn");
 let handler = null, segLabels = [], moveLabel = null, lastVertex = null, drawingPoly = false;
 const fmtDist = m => m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";
@@ -345,7 +365,7 @@ const onCancel = guard(() => handler && handler.disable && handler.disable());
 for (const [id, fn] of [["finishDrawBtn", onFinish], ["undoPointBtn", onUndo], ["cancelDrawBtn", onCancel]])
   for (const ev of ["pointerdown", "click"]) $("#" + id).addEventListener(ev, fn);
 
-// A new area is dashed and editable (drag corners), then solid once used — Occurd's convention.
+// A new area is dashed and editable (drag corners), then solid once used.
 map.on(L.Draw.Event.CREATED, e => {
   drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers(); pendingFile = null;
   editing = e.layer;
@@ -394,6 +414,7 @@ function deleteArea() {
   editing = null; pendingFile = null; current = null;
   drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
   document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true; document.querySelector("#dlCheck").disabled = true;
+  document.querySelector("#downloads").classList.add("off"); document.querySelector("#dlHint").textContent = "Available after Predict.";
   document.querySelector("#results").innerHTML = EMPTY_RESULTS;
   document.querySelector("#name").value = "";
   renderPolyList(); ready();
@@ -405,8 +426,12 @@ function ready() { $("#run").disabled = !(drawn.getLayers().length || pendingFil
 
 $("#load").onclick = () => $("#file").click();
 $("#name").addEventListener("input", renderPolyList);
-$("#file").onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
+$("#file").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (f) await loadFile(f); };
+const dz = $("#load");
+dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("over"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("over"));
+dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+async function loadFile(f) {
   const buf = new Uint8Array(await f.arrayBuffer());
   let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
   pendingFile = {name: f.name, b64: btoa(bin)}; editing = null;
@@ -419,8 +444,8 @@ $("#file").onchange = async e => {
     if (gj) { L.geoJSON(gj, {style}).eachLayer(l => drawn.addLayer(l)); map.fitBounds(drawn.getBounds(), {padding: [50, 50]}); }
   } catch {}
   $("#name").value = f.name.replace(/\.[^.]+$/, "").replace(/_\d{4}-\d{2}-\d{2}_\d+$/, "");
-  setStatus(`Loaded ${f.name}. Press Predict.`); ready(); renderPolyList(); e.target.value = "";
-};
+  setStatus(`Loaded ${f.name}. Press Predict.`); ready(); renderPolyList();
+}
 function kmlToGeoJSON(text) {
   const doc = new DOMParser().parseFromString(text, "text/xml"), polys = [];
   for (const p of doc.getElementsByTagNameNS("*", "Polygon")) {
@@ -684,6 +709,7 @@ function attrsTable(u, units, groups, wvar) {
 
 function show(j) {
   current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false; $("#dlCheck").disabled = false;
+  $("#downloads").classList.remove("off"); $("#dlHint").textContent = "For this prediction.";
   resultLayer.clearLayers(); plotLayer.clearLayers();
   const multi = j.units.length > 1;
   // Units are drawn over the site; the site outline stays on top for reference.
