@@ -1,16 +1,20 @@
-"""Rightree map interface: a small local web server.
+"""Rightree map interface: a small web server.
 
 Serves web/index.html and runs predict.py for an area drawn on the map or
-loaded from a KML/KMZ/GeoJSON file. Local only (binds to 127.0.0.1): the
-records include NVS data under CC BY-NC, and nothing here is meant to be
-published.
+loaded from a KML/KMZ/GeoJSON file.
+
+Runs locally by default (127.0.0.1:7882). For hosting (the Hugging Face
+Space), HOST and PORT come from the environment, and old runs are cleared out.
 
 Usage:
-    python scripts/serve.py [port]        # default 7882, then open http://127.0.0.1:7882
+    python scripts/serve.py [port]        # then open http://127.0.0.1:7882
 """
 import base64
 import json
+import os
 import re
+import secrets
+import shutil
 import subprocess
 import sys
 import threading
@@ -24,11 +28,31 @@ PRED = ROOT / "data" / "predictions"
 REGIONS = sorted(p.name for p in (ROOT / "data" / "env").iterdir()
                  if (p / "region_osm_nominatim.json").exists())
 LOCK = threading.Lock()   # one prediction at a time; each loads the whole region
+KEEP_RUNS = 200           # newest runs kept on disk; older ones are deleted
+MAX_BODY = 5_000_000      # bytes: a drawn area or an uploaded KML/KMZ
+TIMEOUT_S = 300
 
 
 def slug(s):
     s = re.sub(r"[^a-z0-9]+", "-", (s or "").lower()).strip("-")[:40]
     return s or "site"
+
+
+def prune_runs():
+    runs = sorted((d for d in PRED.glob("*") if d.is_dir()), key=lambda d: d.stat().st_mtime, reverse=True)
+    for d in runs[KEEP_RUNS:]:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def credits():
+    """Download citation for each region's occurrence data."""
+    out = {}
+    for r in REGIONS:
+        p = ROOT / "data" / f"citation_{r}.json"
+        if p.exists():
+            c = json.loads(p.read_text(encoding="utf-8"))
+            out[r] = {"citation": c.get("citation"), "doi": c.get("doi")}
+    return out
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -56,11 +80,10 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == "/api/version":
             m = re.search(r"^## (v[\d.]+)", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)
             return self.send_json({"version": m.group(1) if m else None})
-        if self.path == "/api/runs":
-            runs = []
-            for d in sorted(PRED.glob("*/report.json"), key=lambda p: p.stat().st_mtime, reverse=True):
-                runs.append({"id": d.parent.name, "time": d.stat().st_mtime})
-            return self.send_json(runs[:50])
+        if self.path == "/api/credits":
+            return self.send_json(credits())
+        # A run is only fetched by its own id, which carries a random part,
+        # so one person's site isn't visible to others.
         m = re.fullmatch(r"/api/runs/([a-z0-9-]+)", self.path)
         if m:
             return self.send_run(m.group(1))
@@ -73,22 +96,22 @@ class Handler(SimpleHTTPRequestHandler):
         out = json.loads((d / "report.json").read_text(encoding="utf-8"))
         out["id"] = rid
         out["units_geojson"] = json.loads((d / "units.geojson").read_text(encoding="utf-8"))
-        area = next((p for p in d.glob("area.*")), None)
-        if area and area.suffix == ".geojson":
-            out["area_geojson"] = json.loads(area.read_text(encoding="utf-8"))
         return self.send_json(out)
 
     def do_POST(self):
         if self.path != "/api/predict":
             return self.send_json({"error": "Not found"}, 404)
+        n = int(self.headers.get("Content-Length", 0))
+        if n > MAX_BODY:
+            return self.send_json({"error": "That file is too large."}, 413)
         try:
-            req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+            req = json.loads(self.rfile.read(n))
         except (ValueError, json.JSONDecodeError):
             return self.send_json({"error": "Bad request"}, 400)
         region = req.get("region") or (REGIONS[0] if REGIONS else None)
         if region not in REGIONS:
             return self.send_json({"error": f"Unknown region {region}"}, 400)
-        rid = f"{slug(req.get('name'))}-{time.strftime('%Y%m%d-%H%M%S')}"
+        rid = f"{slug(req.get('name'))}-{time.strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(4)}"
         d = PRED / rid
         d.mkdir(parents=True, exist_ok=True)
         if req.get("geojson"):
@@ -101,9 +124,13 @@ class Handler(SimpleHTTPRequestHandler):
         else:
             return self.send_json({"error": "Draw an area or load a KML, KMZ or GeoJSON file"}, 400)
         with LOCK:
-            p = subprocess.run([sys.executable, str(ROOT / "scripts" / "predict.py"), region, rid, str(area)],
-                               capture_output=True, text=True, encoding="utf-8", errors="replace",
-                               env={**__import__("os").environ, "PYTHONIOENCODING": "utf-8"}, cwd=ROOT)
+            try:
+                p = subprocess.run([sys.executable, str(ROOT / "scripts" / "predict.py"), region, rid, str(area)],
+                                   capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   env={**os.environ, "PYTHONIOENCODING": "utf-8"}, cwd=ROOT, timeout=TIMEOUT_S)
+            except subprocess.TimeoutExpired:
+                return self.send_json({"error": "The prediction took too long. Try a smaller area."}, 500)
+            prune_runs()
         if p.returncode != 0 or not (d / "report.json").exists():
             msg = (p.stderr.strip().splitlines() or p.stdout.strip().splitlines() or ["Prediction failed"])[-1]
             return self.send_json({"error": msg}, 500)
@@ -111,9 +138,11 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def main():
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 7882
-    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"Rightree on http://127.0.0.1:{port}  (regions: {', '.join(REGIONS)})")
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 7882))
+    PRED.mkdir(parents=True, exist_ok=True)
+    srv = ThreadingHTTPServer((host, port), Handler)
+    print(f"Rightree on http://{host}:{port}  (regions: {', '.join(REGIONS)})", flush=True)
     srv.serve_forever()
 
 

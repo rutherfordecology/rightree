@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.14.0 (November 2026)
+
+- **Hostable.** `scripts/build_space.py` builds a Hugging Face Space
+  (Docker) with the app and only the data a prediction needs; the
+  Dockerfile, requirements and Space README are in `space/`.
+- **Server:** reads `HOST` and `PORT` from the environment; run ids carry a
+  random suffix; keeps the latest 200 runs; limits uploads to 5 MB and a
+  prediction to 5 minutes; the previous-runs list endpoint is gone.
+- **Model:** areas over 20,000 ha are refused with a message. Common names
+  come from a bundled `data/nztcs_names.json` when present, else Occurd's
+  `nztcs.json`.
+- **Map page:** a "Sources and credits" footer with the GBIF download
+  citation and the licences of each dataset.
+
 ## v0.13.1 (November 2026)
 
 - The map page opens on aerial imagery (Satellite) instead of the street map.

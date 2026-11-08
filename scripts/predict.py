@@ -79,6 +79,7 @@ MIN_PLOTS_FB, MIN_OBS_FB = 3, 10
 # Units: split only if each unit holds at least UNIT_MIN_SHARE of the cells and
 # every pair is at least UNIT_MIN_D apart (a third of the analogue threshold).
 UNIT_MIN_D, UNIT_MIN_SHARE = 0.05, 0.10
+MAX_CELLS = 20_000      # largest area accepted, in 100 m cells (ha)
 ON_SITE_BUFFER_M = 100  # records this close to the site are left out of the evidence
 NATURAL_WETLAND = {"NPS:FW Natural Wetland", "NPS Natural", "Induced"}
 
@@ -272,6 +273,9 @@ def main():
         c = poly.centroid
         rr, cc = rasterio.transform.rowcol(transform, c.x, c.y)
         mask[rr, cc] = True
+    if mask.sum() > MAX_CELLS:
+        sys.exit(f"The area is too large: {int(mask.sum()):,} ha. The limit is {MAX_CELLS:,} ha; "
+                 "split it into smaller areas.")
     rows, cols = np.nonzero(mask)
     cells = env_stack(env_dir, rows, cols)
     land = cells[KEY_VARS].notna().all(axis=1).to_numpy()    # drop sea and no-data cells
@@ -352,7 +356,12 @@ def main():
         rec.loc[merge, "name"] = two[merge]
         rec.loc[merge, "category"] = rec.loc[merge, "name"].map(cat["category"])
         rec.loc[merge, "bioStatus"] = rec.loc[merge, "name"].map(cat["bioStatus"])
-    nztcs = json.loads((ROOT.parent / "Occurd" / "nztcs.json").read_text(encoding="utf-8"))
+    # Common names: Occurd's NZTCS file locally, or the slim copy bundled
+    # for hosting (data/nztcs_names.json, made by scripts/build_space.py).
+    names_path = ROOT / "data" / "nztcs_names.json"
+    if not names_path.exists():
+        names_path = ROOT.parent / "Occurd" / "nztcs.json"
+    nztcs = json.loads(names_path.read_text(encoding="utf-8"))
     common = {}
     for v in nztcs.values():
         if isinstance(v, dict) and v.get("name"):

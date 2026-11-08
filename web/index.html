@@ -51,6 +51,11 @@ button:disabled { opacity: .4; cursor: default; }
 #status { font-size: 13px; }
 #status.err { color: var(--threat); }
 #results { flex: 1; overflow-y: auto; padding: 4px 18px 24px; }
+#credits { border-top: 1px solid var(--rule); padding: 6px 18px 8px; font-size: 12px; color: var(--grey); max-height: 45vh; overflow-y: auto; }
+#credits summary { cursor: pointer; font-weight: 600; }
+#credits ul { margin: 6px 0; padding-left: 16px; }
+#credits li { margin: 3px 0; }
+#credits a { color: var(--grey); }
 .empty { color: var(--grey); padding: 10px 0; }
 .empty ol { padding-left: 18px; }
 .unit { border: 1px solid var(--rule); margin: 14px 0; }
@@ -173,6 +178,21 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
       <p>Species names open in LookLike.</p>
     </div>
   </div>
+  <details id="credits">
+    <summary>Data sources and credits</summary>
+    <ul>
+      <li><b>Species records:</b> <span id="gbifCite">GBIF.org occurrence download</span>, including the National Vegetation Survey
+        Databank (NVS, Manaaki Whenua – Landcare Research; CC BY-NC 4.0), iNaturalist NZ and New Zealand herbaria.
+        NVS data are for non-commercial use.</li>
+      <li><b>Environment:</b> New Zealand Environmental Data Stack (NZEnvDS) v1.1, McCarthy et al. 2021; CC BY 4.0.</li>
+      <li><b>Land cover:</b> Land Cover Database v6 (LCDB), Manaaki Whenua – Landcare Research, via LRIS; CC BY 4.0.</li>
+      <li><b>Wetlands:</b> Gisborne District Council Regional Wetland Assessment 2022 (Morphum Environmental); CC BY 4.0.</li>
+      <li><b>Names and threat status:</b> New Zealand Threat Classification System (Department of Conservation) and the
+        New Zealand Organisms Register.</li>
+      <li><b>Region boundary:</b> © OpenStreetMap contributors (ODbL). Basemaps as credited on the map.</li>
+    </ul>
+    <p>Rightree by Rutherford Ecology. Predictions are a starting list to check on the ground, not a survey.</p>
+  </details>
 </aside>
 <div id="mapwrap">
   <div id="map"></div>
@@ -588,6 +608,9 @@ function drawPlots(s) {
 }
 
 (async () => {
+  fetch("/api/credits").then(r => r.json()).then(c => { const x = Object.values(c)[0];
+    if (x && x.doi) document.querySelector("#gbifCite").innerHTML = `${esc(x.citation || "GBIF.org occurrence download")}`.replace(
+      /https:\/\/doi\.org\/\S+/, m => `<a href="${m}" target="_blank" rel="noopener">${m}</a>`); }).catch(() => {});
   fetch("/api/version").then(r => r.json()).then(v => { if (v.version) document.querySelector("#ver").textContent = v.version; }).catch(() => {});
   const regions = await (await fetch("/api/regions")).json();
   $("#region").innerHTML = Object.keys(regions).map(k => `<option value="${k}">${k}</option>`).join("");

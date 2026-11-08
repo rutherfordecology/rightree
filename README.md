@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.13.1). First predictions run; native records are tagged with environment,
+Status: prototype (v0.14.0). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
@@ -49,7 +49,20 @@ Open http://127.0.0.1:7882. Draw the site (same tools as Occurd), or load a
 KML exported from Occurd, and press Predict. Distinct habitats are mapped as
 units, each with its model inputs and what sets it apart. Lists show by unit
 and stage, with species linked to LookLike. Download the species CSV or the
-units as GeoJSON. It runs locally only.
+units as GeoJSON.
+
+### Hosting (Hugging Face Space)
+
+```bash
+python scripts/build_space.py ../rightree-space
+```
+
+Builds a folder with the app, only the data a prediction needs (about
+60 MB: the model's grids, the tagged records, a slim names file) and a
+Dockerfile (`space/`). Push that folder to a Hugging Face Space set to the
+Docker SDK; binary files go through Git LFS. The server reads `HOST` and
+`PORT` from the environment, keeps the latest 200 runs, and refuses areas
+over 20,000 ha.
 
 ### From the command line
 
