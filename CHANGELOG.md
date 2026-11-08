@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.6.0 (November 2026)
+
+- First predictions. `scripts/predict.py <region> <site> <polygon>` splits
+  the polygon into 1–4 environmental units (k-means, only when the split is
+  clear). For each unit and each successional stage (mature forest;
+  regenerating hardwoods, mānuka/kānuka and scrub; open ground) it lists the
+  native species of the most similar sites:
+  - **Plot share:** the share of the closest NVS plots (up to 20) that recorded
+    the species. Plots list everything present, so this is the strongest
+    evidence.
+  - **Observation share:** the share of the closest iNaturalist and herbarium
+    records. Presence-only, so supporting evidence.
+  - **Wetland list:** from records inside natural GDC wetlands, when the unit
+    has one.
+  Writes `report.md`, `species.csv` (with NZTCS status and common names) and
+  `units.geojson` to `data/predictions/<site>/`.
+- Similarity is a Gower distance: each layer scaled by its regional range,
+  with climate, terrain and soil groups weighted equally. Sites must be within
+  0.15. A site is vetoed if temperature, cold-month minimum, rainfall or
+  distance to coast differs by more than a quarter of the range. This stopped
+  dune plants being predicted 50 km inland. With too little evidence the
+  report says so instead of giving a list.
+- Soil class 0 is treated as no data. `soil_chemLims` is dropped (99.4% one
+  class in Gisborne). Records in a no-data cell now take the nearest land
+  cell within 300 m, so coastal records keep their environment.
+- Tests: Poverty Bay flats → kahikatea, pukatea, pūriri, tawa, tītoki
+  (lowland alluvial forest); western ranges → red and silver beech, rimu,
+  tāwari, miro.
+
 ## v0.5.0 (November 2026)
 
 - Natives only. `scripts/native_status.py` decides native status for each

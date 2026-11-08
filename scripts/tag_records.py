@@ -18,6 +18,7 @@ import pandas as pd
 import rasterio
 import shapely
 from rasterio.warp import transform
+from scipy.ndimage import distance_transform_edt
 
 LCDB_YEARS = [1996, 2001, 2008, 2012, 2018, 2023]
 
@@ -63,16 +64,29 @@ def main():
     for f in ["wl_class", "wl_status", "confidence"]:
         df[f"gdc_{f}"] = [props.at[j, f] if j >= 0 else None for j in i]
 
-    # Environmental rasters
+    # Environmental rasters. A record in a no-data cell (coastal records often
+    # fall in a cell the grid treats as sea) takes the nearest valid cell
+    # within FILL_M, so dune and rocky-shore records keep their environment.
+    FILL_M = 300
     skip = {"lcdb_class", "wetland_class", "wetland_status"}
     for tif in sorted(env.glob("*.tif")):
         if tif.stem in skip:
             continue
         with rasterio.open(tif) as s:
-            v = np.array([a[0] for a in s.sample(zip(x, y))], dtype="float64")
+            a = s.read(1).astype("float64")
             if s.nodata is not None:
-                v[v == s.nodata] = np.nan
-        df[f"env_{tif.stem}"] = v
+                a[a == s.nodata] = np.nan
+            if tif.stem.startswith("soil_"):
+                a[a == 0] = np.nan          # FSL 0 = no data
+            rr, cc = rasterio.transform.rowcol(s.transform, x, y)
+            rr, cc = np.clip(rr, 0, s.height - 1), np.clip(cc, 0, s.width - 1)
+            bad = np.isnan(a)
+            dist, (ir, ic) = distance_transform_edt(bad, return_indices=True)
+            filled = a[ir, ic]
+            filled[dist * abs(s.transform.a) > FILL_M] = np.nan
+            if tif.stem == "distance_wetland":
+                filled = a                  # outside the GDC region stays unknown
+        df[f"env_{tif.stem}"] = filled[rr, cc]
 
     out = root / "data" / f"records_{name}_tagged.csv.gz"
     df.to_csv(out, index=False)

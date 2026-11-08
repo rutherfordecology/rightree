@@ -9,8 +9,8 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.5.0). Native records are loaded and tagged with environment,
-land cover and wetlands; nothing predicts yet. See
+Status: prototype (v0.6.0). First predictions run; native records are tagged with environment,
+land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
 ## Building a region's data
@@ -37,20 +37,35 @@ python scripts/tag_records.py <name>
 Occurd repo checked out next to this one (it uses Occurd's NZTCS and NZOR name
 files and the but-is-it-threatened resolver).
 
-## How it works (planned)
+## Predicting a site
 
-1. **Draw a polygon.** Rightree splits it into units that differ in
-   environment: land environment (LENZ), soil, geology, slope and aspect.
-2. **Describe each unit** by its environmental values: rainfall, temperature,
-   soil, geology, slope, aspect and current land cover (LCDB).
-3. **Find similar places** within the same or neighbouring ecological
-   districts, so biogeographic limits are respected.
-4. **Look at what has been recorded there.** Uses high-precision GBIF records,
-   and NVS plots if access is granted.
-5. **Return a ranked species list for each unit**, as the percentage of similar
-   sites a species was recorded in. Results are split by land cover, so the list
-   shows a succession sequence: what grows in mānuka/kānuka on these sites, and
-   what grows in mature forest.
+```bash
+python scripts/predict.py <region> <site-name> <polygon.geojson | "POLYGON((lon lat, ...))">
+```
+
+Writes `report.md`, `species.csv` and `units.geojson` to
+`data/predictions/<site-name>/`.
+
+## How it works
+
+1. **Units.** The polygon's 100 m cells are split into 1–4 units that differ
+   in climate, terrain and soil (only when the split is clear). Sea and
+   no-data cells are dropped.
+2. **Similar sites.** Each unit is compared with every record's site using a
+   Gower distance (climate, terrain and soil weighted equally). A site counts
+   only if it is close overall and no more than a quarter of the regional range
+   away in temperature, frost, rainfall or distance to the coast.
+3. **Stages.** Similar sites are split by their land cover when recorded:
+   mature forest; regenerating hardwoods, mānuka/kānuka and scrub; and open
+   ground. That gives a succession sequence.
+4. **Lists.** Plot share is the share of the closest NVS plots that recorded
+   each species; plots list everything present, so this is the strongest
+   evidence. Observation share is the same from iNaturalist and herbarium
+   records, which are presence-only. A unit with a natural GDC wetland also
+   gets a wetland list. Where evidence is too thin, the report says so.
+
+Still to come: geology (QMAP), Ecological District limits, and a wider
+analogue pool beyond the region.
 
 ## Related tools
 
