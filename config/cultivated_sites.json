@@ -1,0 +1,11 @@
+{
+  "_note": "Places where records are mostly planted collections. Records inside these boxes are dropped, whatever their dataset. GBIF's simple CSV carries no establishmentMeans, so this is the only cultivated filter until a native-species list is applied.",
+  "sites": [
+    {
+      "name": "Eastwoodhill Arboretum, Ngatapa",
+      "lat": [-38.570, -38.538],
+      "lon": [177.705, 177.727],
+      "why": "836 Auckland Museum specimens (1989-2025) of planted oaks, maples and other exotic trees; found as a 'Deciduous Hardwoods' cluster with 568 species"
+    }
+  ]
+}

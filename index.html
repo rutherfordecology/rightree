@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rightree</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 6 17h5l-4 6h7v6h4v-6h7l-4-6h5z' fill='%23263b27'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+<style>
+/* Colours, type and map controls follow Occurd's visual style. */
+:root {
+  --slate: #263b27; --grey: #5F6B66; --ink: #000; --bg: #fff; --rule: #d5d9d7; --hover: #eef0ef;
+  --close: #263b27; --best: #a15c00; --best-soft: #fff4e3; --soft: #eef0ef; --threat: #a1261b;
+  --font: 'Inter Tight', system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --slate: #8fc79a; --grey: #a3ada8; --ink: #e9eeeb; --bg: #151a17; --rule: #2e3833; --hover: #1f2823;
+    --close: #8fc79a; --best: #e6a24a; --best-soft: #2c2417; --soft: #1f2823; --threat: #ef7f72;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); display: grid; grid-template-columns: 540px 1fr; }
+#side { display: flex; flex-direction: column; border-right: 1px solid var(--rule); min-height: 0; }
+header { padding: 14px 18px 12px; background: var(--slate); color: #fff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) header { background: #263b27; } }
+header h1 .ver { font-size: 12px; font-weight: 500; opacity: .75; margin-left: 4px; }
+header h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: .2px; }
+header p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+#controls { padding: 12px 18px; border-bottom: 1px solid var(--rule); display: grid; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+input[type=text], select { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--rule); border-radius: 0;
+  background: var(--bg); color: var(--ink); font: inherit; }
+button, .btn { padding: 7px 12px; border-radius: 0; border: 1px solid var(--slate); background: var(--bg); color: var(--ink);
+  font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-block; }
+button:hover, .btn:hover { background: var(--hover); }
+button.primary { background: #263b27; color: #fff; border-color: #263b27; font-weight: 600; }
+button:disabled { opacity: .4; cursor: default; }
+.hint { color: var(--grey); font-size: 12.5px; }
+/* Area list, as Occurd's drawn-polygon list */
+#polyList:empty { display: none; }
+.poly-item { display: flex; align-items: center; gap: 6px; padding: 4px 0 4px 10px; border-left: 3px solid #C8611A; font-size: 13px; }
+.poly-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.poly-item-count { color: var(--grey); font-size: 12px; white-space: nowrap; }
+.poly-remove { cursor: pointer; color: var(--slate); font-size: 16px; line-height: 1; padding: 4px 8px; min-width: 30px; min-height: 30px;
+  display: flex; align-items: center; justify-content: center; border: 0; background: none; }
+.poly-remove:hover { color: var(--threat); background: none; }
+#status { font-size: 13px; }
+#status.err { color: var(--threat); }
+#results { flex: 1; overflow-y: auto; padding: 4px 18px 24px; }
+#credits { border-top: 1px solid var(--rule); padding: 6px 18px 8px; font-size: 12px; color: var(--grey); max-height: 45vh; overflow-y: auto; }
+#credits summary { cursor: pointer; font-weight: 600; }
+#credits ul { margin: 6px 0; padding-left: 16px; }
+#credits li { margin: 3px 0; }
+#credits a { color: var(--grey); }
+.empty { color: var(--grey); padding: 10px 0; }
+.empty ol { padding-left: 18px; }
+.unit { border: 1px solid var(--rule); margin: 14px 0; }
+.unit-head { padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.unit-head:hover { background: var(--hover); }
+.swatch { width: 14px; height: 14px; flex: none; margin-top: 3px; }
+.unit-head h2 { margin: 0; font-size: 15px; }
+.env { color: var(--grey); font-size: 12.5px; }
+.apart { font-size: 12.5px; margin-top: 3px; }
+details.attrs { border-top: 1px solid var(--rule); padding: 6px 12px; }
+details.attrs summary { cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.tabs { display: flex; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); overflow-x: auto; }
+.tab { flex: 1; padding: 7px 6px; border: 0; background: none; font-size: 12.5px; color: var(--grey); border-bottom: 2px solid transparent; }
+.tab:hover { background: var(--hover); }
+.tab.on { color: var(--ink); border-bottom-color: var(--slate); font-weight: 600; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
+.dot.close { background: var(--close); } .dot.best { background: var(--best); } .dot.none { background: var(--rule); }
+.stage { padding: 10px 12px 12px; }
+.badge { display: inline-block; font-size: 11.5px; padding: 1px 7px; font-weight: 600; }
+.badge.close { background: var(--soft); color: var(--close); }
+.badge.best { background: var(--best-soft); color: var(--best); }
+.evidence { color: var(--grey); font-size: 12.5px; margin: 6px 0; }
+.note { background: var(--best-soft); padding: 7px 9px; font-size: 12.5px; margin: 6px 0; }
+.note.plain { background: var(--soft); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+th { text-align: left; font-weight: 600; color: var(--grey); font-size: 11.5px; padding: 4px; border-bottom: 1px solid var(--rule); }
+td { padding: 4px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.grp { font-weight: 600; font-size: 11.5px; color: var(--grey); text-transform: uppercase; letter-spacing: .4px; padding-top: 8px; }
+tr.diff td { background: var(--best-soft); }
+a.sp { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--grey); }
+a.sp:hover { color: var(--slate); border-bottom-color: var(--slate); }
+.sci { font-style: italic; color: var(--grey); font-size: 12px; }
+.barcell { width: 70px; }
+.bar { height: 8px; background: var(--rule); position: relative; margin-top: 5px; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--slate); }
+.bar i.obs { opacity: .55; }
+/* Layer ticks, filter chips and likelihood tags */
+th.lay, td.lay { width: 26px; text-align: center; padding-left: 1px; padding-right: 1px; }
+th.lay { font-size: 10.5px; cursor: help; }
+td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--slate); margin-top: 5px; }
+.filters { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0; border-bottom: 1px solid var(--rule);
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { font-size: 12.5px; padding: 4px 9px; border: 1px solid var(--rule); background: var(--bg); }
+.chip.on { background: #263b27; color: #fff; border-color: #263b27; }
+.filters label { font-size: 12.5px; display: flex; align-items: center; gap: 4px; margin-left: auto; cursor: pointer; }
+.lk { font-size: 10.5px; font-weight: 600; padding: 0 5px; white-space: nowrap; }
+.lk.e { background: #263b27; color: #fff; } .lk.l { background: var(--soft); color: var(--slate); }
+.lk.p { border: 1px solid var(--rule); color: var(--grey); }
+.threat { font-size: 11px; color: var(--threat); font-weight: 600; }
+.stage-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.stage-actions button, .stage-actions .btn { font-size: 12.5px; padding: 5px 10px; }
+.foot { color: var(--grey); font-size: 12px; margin-top: 14px; }
+.foot summary { cursor: pointer; }
+#mapwrap { position: relative; }
+#map { height: 100%; }
+#busy { position: absolute; inset: 0; background: rgba(0,0,0,.25); display: none; align-items: center; justify-content: center; z-index: 1300; }
+#busy div { background: var(--bg); color: var(--ink); padding: 14px 18px; border: 1px solid var(--slate); }
+#welcome { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+#welcome .box { background: var(--bg); color: var(--ink); border: 1px solid var(--slate); max-width: 460px; width: 100%; }
+#welcome h2 { margin: 0; padding: 14px 18px 12px; background: var(--slate); color: #fff; font-size: 18px; }
+#welcome .body { padding: 14px 18px 16px; }
+#welcome p { margin: 0 0 10px; }
+#welcome .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+#welcome .primary { background: var(--slate); color: #fff; }
+
+/* Occurd's Leaflet / Leaflet.draw overrides */
+.leaflet-container { font-family: var(--font); }
+.leaflet-bar, .leaflet-touch .leaflet-bar, .leaflet-control-layers, .leaflet-touch .leaflet-control-layers {
+  border-radius: 0 !important; box-shadow: none !important; border: 1px solid #263b27 !important; }
+.leaflet-bar a, .leaflet-touch .leaflet-bar a { border-radius: 0 !important; color: #000; border-bottom-color: #d5d9d7; }
+.leaflet-bar a:hover { background: #eef0ef; }
+.leaflet-draw-actions a { border-radius: 0 !important; background: #263b27 !important; }
+.leaflet-draw-tooltip { border-radius: 0; background: #000; border: none; }
+.leaflet-draw-tooltip:before { border-right-color: #000; }
+.leaflet-error-draw-tooltip { display: none !important; }
+.draw-dist-label { background: transparent !important; border: none !important; box-shadow: none; overflow: visible !important; pointer-events: none; }
+.draw-dist-label span { display: inline-block; background: #000; color: #fff; font-size: 13px; font-weight: 600; padding: 3px 9px;
+  white-space: nowrap; font-family: var(--font); transform: translate(-50%,-50%); pointer-events: none; }
+#drawActionBar { display: none; position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 1200; gap: 8px; white-space: nowrap; }
+#drawActionBar button { background: #263b27; color: #fff; border: none; padding: 11px 22px; font-size: 14px; font-weight: 500; touch-action: none; }
+#drawActionBar #cancelDrawBtn { background: #fff; color: #263b27; border: 1.5px solid #263b27; }
+#drawActionBar button:disabled { opacity: .35; pointer-events: none; }
+.unit-label { background: #fff; border: 1px solid #263b27; border-radius: 0; box-shadow: none; font-weight: 600; font-size: 12px; padding: 1px 6px; color: #000; }
+.unit-label:before { display: none; }
+
+@media (max-width: 800px) {
+  body { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; }
+  #side { order: 2; border-right: 0; border-top: 1px solid var(--rule); }
+  #mapwrap { order: 1; }
+}
+</style>
+</head>
+<body>
+<aside id="side">
+  <header>
+    <h1>Rightree <span id="ver" class="ver"></span></h1>
+    <p>Native plants expected at a site, from where they grow in similar places nearby.</p>
+  </header>
+  <div id="controls">
+    <div class="row">
+      <input id="name" type="text" placeholder="Site name (optional)">
+      <select id="region" title="Region data"></select>
+    </div>
+    <div class="row">
+      <button id="load" title="Load a KML, KMZ or GeoJSON, e.g. exported from Occurd">Load file…</button>
+      <input id="file" type="file" accept=".kml,.kmz,.geojson,.json" hidden>
+      <button id="run" class="primary" disabled>Predict</button>
+      <span style="flex:1"></span>
+      <button id="dlCsv" disabled title="Species lists for every unit and stage">Download species CSV</button>
+      <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON">Units GeoJSON</button>
+    </div>
+    <div id="polyList"></div>
+    <div id="status" class="hint">Draw an area with the polygon or rectangle tool on the map, or load a file.</div>
+  </div>
+  <div id="results">
+    <div class="empty">
+      <ol>
+        <li>Draw your site with the tools at the top left of the map, or load a KML exported from Occurd.</li>
+        <li>Press <b>Predict</b>.</li>
+        <li>If the site holds distinct habitats it is split into units, mapped and described. Each unit gets lists for
+          <b>mature forest</b>, <b>regenerating</b> (kānuka, scrub, young hardwoods) and <b>open ground</b>, plus a
+          <b>wetland</b> list where there is one.</li>
+      </ol>
+      <p><span class="badge close">Close matches</span> are good evidence.
+        <span class="badge best">Best available</span> means no close matches, so treat the list as a lead to check.</p>
+      <p>Species names open in LookLike.</p>
+    </div>
+  </div>
+  <details id="credits">
+    <summary>Data sources and credits</summary>
+    <ul>
+      <li><b>Species records:</b> <span id="gbifCite">GBIF.org occurrence download</span>, including the National Vegetation Survey
+        Databank (NVS, Manaaki Whenua – Landcare Research; CC BY-NC 4.0), iNaturalist NZ and New Zealand herbaria.
+        NVS data are for non-commercial use.</li>
+      <li><b>Environment:</b> New Zealand Environmental Data Stack (NZEnvDS) v1.1, McCarthy et al. 2021; CC BY 4.0.</li>
+      <li><b>Land cover:</b> Land Cover Database v6 (LCDB), Manaaki Whenua – Landcare Research, via LRIS; CC BY 4.0.</li>
+      <li><b>Wetlands:</b> Gisborne District Council Regional Wetland Assessment 2022 (Morphum Environmental); CC BY 4.0.</li>
+      <li><b>Potential natural ecosystems:</b> this work uses a derivative of “Ecosystem Projector for NZ” by
+        <a href="https://eco-index.nz/" target="_blank" rel="noopener">Eco-index</a> (based on Potential Natural Vegetation,
+        Manaaki Whenua), used under CC BY 4.0; gridded to 100 m.</li>
+      <li><b>Names and threat status:</b> New Zealand Threat Classification System (Department of Conservation) and the
+        New Zealand Organisms Register.</li>
+      <li><b>Region boundary:</b> © OpenStreetMap contributors (ODbL). Basemaps as credited on the map.</li>
+    </ul>
+    <p>Rightree by Rutherford Ecology. Predictions are a starting list to check on the ground, not a survey.</p>
+  </details>
+</aside>
+<div id="mapwrap">
+  <div id="map"></div>
+  <div id="drawActionBar">
+    <button id="finishDrawBtn">&#x2713; Finish</button>
+    <button id="undoPointBtn">&#x21A9; Undo point</button>
+    <button id="cancelDrawBtn">&#x2715; Cancel</button>
+  </div>
+  <div id="busy"><div id="busyText">Predicting…</div></div>
+</div>
+<div id="welcome" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+  <div class="box">
+    <h2 id="welcomeTitle">Welcome to Rightree</h2>
+    <div class="body">
+      <p>Rightree lists the native plants expected at a site in Tairāwhiti, from where they grow in similar places nearby.</p>
+      <p>The model runs in your browser, so nothing you draw leaves your computer. To do that it downloads about
+        <b>45 MB once</b> (Python and its maths libraries), which your browser keeps for next time. Each site then
+        loads a few MB of map data.</p>
+      <p>On a mobile connection you may want to wait for Wi-Fi.</p>
+      <div class="actions"><button id="welcomeLater">Not now</button><button id="welcomeOk" class="primary">Accept and load</button></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script>
+const LOOKLIKE = "https://occurd.rutherfordecology.co.nz/looklike/";
+const AREA_COLOUR = "#C8611A";            // Occurd's first drawn-area colour
+const DRAW_STYLE = {color: "#FF8C00", fillColor: "#FF8C00", fillOpacity: 0.1, weight: 3};
+const UNIT_COLOURS = ["#2c5f8a", "#8a2c2c", "#5a2a7a", "#1a5a6a"];   // Occurd's polygon palette
+const STAGE_SHORT = {"Mature forest": "Mature forest", "Regenerating (hardwoods, mānuka/kānuka, scrub)": "Regenerating",
+  "Open (grassland, riverbed, coast)": "Open ground", "Wetland": "Wetland"};
+const STAGE_HELP = {
+  "Mature forest": "Species of native forest at the most similar sites: the long-term target.",
+  "Regenerating": "Species of kānuka/mānuka, scrub and young hardwoods at similar sites: nurse crop and early planting.",
+  "Open ground": "Natives that grow in grassland, riverbeds or on the coast at similar sites, away from bush edges.",
+  "Wetland": "Species recorded inside natural wetlands (GDC mapping) at similar sites."
+};
+// Model inputs: label, unit, decimals, and a plain-language note.
+const VARS = {
+  temp_meanAnn: ["Mean annual temperature", "°C", 1],
+  temp_minColdMonth: ["Coldest-month minimum", "°C", 1, "frost risk"],
+  precip_ann: ["Annual rainfall", "mm", 0],
+  waterBalance_annDeficit: ["Annual water deficit", "mm", 0, "summer drought"],
+  vpd_oct: ["October vapour pressure deficit", "kPa", 2, "spring dryness of the air"],
+  solRad_meanAnn: ["Mean solar radiation", "MJ/m²/day", 1],
+  wind_meanAnn: ["Mean wind", "", 1, "relative exposure"],
+  slope_deg: ["Slope", "°", 0],
+  aspect_northness: ["Aspect: northness", "", 2, "−1 south-facing, +1 north-facing"],
+  topo_wetness: ["Topographic wetness", "", 1, "higher where water collects"],
+  topo_position: ["Topographic position", "", 1, "negative in gullies, positive on ridges"],
+  distance_coast: ["Distance to coast", "km", 1],
+  soil_drainage: ["Soil drainage", "class", 0, "1 very poor … 5 well drained"],
+  soil_pH: ["Soil pH", "", 1],
+  soil_age: ["Soil age", "class", 0, "1 youngest (recent alluvium)"],
+  soil_particleSize: ["Soil particle size", "class", 0, "class 1–5"],
+  soil_acidP: ["Acid-soluble phosphorus", "class", 0, "class 1–4"],
+  soil_calcium: ["Exchangeable calcium", "class", 0, "class 1–4"],
+  soil_induration: ["Induration", "class", 0, "class 1–4, how hard the parent rock is"],
+  distance_wetland: ["Distance to natural wetland", "m", 0]
+};
+const GROUP_NAMES = {climate: "Climate", terrain: "Terrain", soil: "Soil"};
+const THREAT = c => c && !/Not Threatened|Introduced|Data Deficient|Not Assessed|^nan$/i.test(c);
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const pct = v => v > 0 ? Math.round(v * 100) + "%" : "";
+const ll = name => LOOKLIKE + "?s=" + encodeURIComponent(name);
+function fmtVal(v, k) {
+  if (v == null) return "—";
+  const [, unit, dp] = VARS[k] || ["", "", 1];
+  if (k === "distance_coast") v = v / 1000;
+  return (+v).toLocaleString(undefined, {minimumFractionDigits: dp, maximumFractionDigits: dp}) + (unit && unit !== "class" ? " " + unit : "");
+}
+
+// ── Map: Occurd's basemaps and draw tools ──────────────────────────────────
+const map = L.map("map").setView([-38.4, 177.9], 9);
+const tile = {maxZoom: 19, keepBuffer: 4};
+const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {...tile, attribution: "&copy; OpenStreetMap contributors"});
+const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {...tile, attribution: "&copy; Esri, Maxar, Earthstar Geographics"});
+const grey = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {...tile, attribution: "&copy; OpenStreetMap contributors &copy; CARTO"});
+const topo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {...tile, maxZoom: 17, attribution: "&copy; OpenTopoMap (CC-BY-SA)"});
+sat.addTo(map);   // aerial imagery by default
+L.control.layers({"Map": osm, "Satellite": sat, "Greyscale": grey, "Topo": topo}, {}, {position: "topleft"}).addTo(map);
+
+const drawn = L.featureGroup().addTo(map);
+const resultLayer = L.layerGroup().addTo(map);
+const plotLayer = L.layerGroup().addTo(map);
+let pendingFile = null, current = null, editing = null;
+
+L.drawLocal.draw.handlers.polygon.tooltip.start = "Click to start drawing.";
+L.drawLocal.draw.handlers.polygon.tooltip.cont = "Click to continue drawing.";
+L.drawLocal.draw.handlers.polygon.tooltip.end = "Double-click to close drawing.";
+L.drawLocal.draw.handlers.rectangle.tooltip.start = "Click and drag to draw a rectangle.";
+L.drawLocal.draw.toolbar.buttons.polygon = "Draw the site";
+L.drawLocal.draw.toolbar.buttons.rectangle = "Draw a rectangle";
+const drawControl = new L.Control.Draw({
+  edit: {featureGroup: drawn, edit: false, remove: false},
+  draw: {polygon: {shapeOptions: DRAW_STYLE, showArea: false, allowIntersection: true},
+         rectangle: {shapeOptions: DRAW_STYLE, showArea: false},
+         polyline: false, circle: false, circlemarker: false, marker: false}
+}).addTo(map);
+
+// Finish / Undo / Cancel bar and segment lengths while drawing (as in Occurd)
+const bar = $("#drawActionBar"), finishBtn = $("#finishDrawBtn");
+let handler = null, segLabels = [], moveLabel = null, lastVertex = null, drawingPoly = false;
+const fmtDist = m => m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";
+const distLabel = (at, text, moving) => L.marker(at, {interactive: false, keyboard: false,
+  icon: L.divIcon({className: "draw-dist-label" + (moving ? " draw-dist-moving" : ""), html: "<span>" + text + "</span>", iconSize: [0, 0]})}).addTo(map);
+function clearLabels() { segLabels.forEach(l => map.removeLayer(l)); segLabels = []; if (moveLabel) map.removeLayer(moveLabel); moveLabel = null; lastVertex = null; drawingPoly = false; }
+map.on(L.Draw.Event.DRAWSTART, e => {
+  finishEdit();
+  map.doubleClickZoom.disable();
+  if (e.layerType === "rectangle") { handler = null; return; }
+  handler = e.handler || drawControl._toolbars.draw._modes.polygon.handler;
+  bar.style.display = "flex"; finishBtn.disabled = true; clearLabels(); drawingPoly = true;
+});
+map.on(L.Draw.Event.DRAWSTOP, () => { bar.style.display = "none"; handler = null; clearLabels(); map.doubleClickZoom.enable(); });
+map.on("draw:drawvertex", e => {
+  const v = e.layers.getLayers().map(m => m.getLatLng());
+  if (v.length >= 2) { const a = v[v.length - 2], b = v[v.length - 1];
+    segLabels.push(distLabel(L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2), fmtDist(a.distanceTo(b)))); }
+  lastVertex = v[v.length - 1] || null; finishBtn.disabled = v.length < 3;
+});
+map.on("mousemove", e => {
+  if (!drawingPoly || !lastVertex) return;
+  const mid = L.latLng((lastVertex.lat + e.latlng.lat) / 2, (lastVertex.lng + e.latlng.lng) / 2), t = fmtDist(lastVertex.distanceTo(e.latlng));
+  if (!moveLabel) moveLabel = distLabel(mid, t, true);
+  else { moveLabel.setLatLng(mid); moveLabel.setIcon(L.divIcon({className: "draw-dist-label draw-dist-moving", html: "<span>" + t + "</span>", iconSize: [0, 0]})); }
+});
+const guard = fn => { let last = 0; return e => { e.preventDefault(); e.stopPropagation(); const n = Date.now(); if (n - last < 400) return; last = n; fn(); }; };
+const onFinish = guard(() => { if (handler && handler._markers && handler._markers.length >= 3) handler.completeShape(); });
+const onUndo = guard(() => handler && handler.deleteLastVertex && handler.deleteLastVertex());
+const onCancel = guard(() => handler && handler.disable && handler.disable());
+for (const [id, fn] of [["finishDrawBtn", onFinish], ["undoPointBtn", onUndo], ["cancelDrawBtn", onCancel]])
+  for (const ev of ["pointerdown", "click"]) $("#" + id).addEventListener(ev, fn);
+
+// A new area is dashed and editable (drag corners), then solid once used — Occurd's convention.
+map.on(L.Draw.Event.CREATED, e => {
+  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers(); pendingFile = null;
+  editing = e.layer;
+  editing.setStyle({color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.08, weight: 2, dashArray: "7,5"});
+  drawn.addLayer(editing);
+  if (editing.editing) editing.editing.enable();
+  map.fitBounds(drawn.getBounds(), {padding: [50, 50]});
+  ready(); areaStatus();
+  editing.on("edit", areaStatus);
+});
+function finishEdit() {
+  if (!editing) return;
+  if (editing.editing) editing.editing.disable();
+  editing.setStyle({color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.1, weight: 2, dashArray: null});
+  editing = null;
+}
+const EMPTY_RESULTS = document.querySelector("#results").innerHTML;
+function areaHa() {
+  let ha = 0;
+  drawn.eachLayer(l => {
+    if (!l.getLatLngs) return;
+    let ll = l.getLatLngs();
+    const polys = ll[0] && ll[0].lat !== undefined ? [[ll]] : ll[0] && ll[0][0] && ll[0][0].lat !== undefined ? [ll] : ll;
+    for (const poly of polys) ha += L.GeometryUtil.geodesicArea(poly[0]) / 1e4;
+  });
+  return ha;
+}
+const fmtHa = ha => (ha < 10 ? ha.toFixed(1) : Math.round(ha).toLocaleString()) + " ha";
+function areaStatus() {
+  if (!drawn.getLayers().length) return;
+  renderPolyList();
+  setStatus(`Area: ${fmtHa(areaHa())}. Drag the corners to adjust, then press Predict.`);
+}
+// The site area, listed so it can be deleted (one area at a time).
+function renderPolyList() {
+  const el = document.querySelector("#polyList");
+  if (!drawn.getLayers().length && !pendingFile) { el.innerHTML = ""; return; }
+  const name = document.querySelector("#name").value.trim() || (pendingFile ? pendingFile.name : "Drawn area");
+  el.innerHTML = `<div class="poly-item"><span class="poly-item-name" title="${esc(name)}">${esc(name)}</span>
+    <span class="poly-item-count">${drawn.getLayers().length ? fmtHa(areaHa()) : ""}</span>
+    <button class="poly-remove" title="Delete this area and its results">&#x2715;</button></div>`;
+  el.querySelector(".poly-remove").onclick = deleteArea;
+}
+function deleteArea() {
+  if (editing && editing.editing) editing.editing.disable();
+  editing = null; pendingFile = null; current = null;
+  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
+  document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true;
+  document.querySelector("#results").innerHTML = EMPTY_RESULTS;
+  document.querySelector("#name").value = "";
+  renderPolyList(); ready();
+  setStatus("Area deleted. Draw a new one or load a file.");
+}
+
+function setStatus(msg, err) { const s = $("#status"); s.textContent = msg; s.className = err ? "err" : "hint"; }
+function ready() { $("#run").disabled = !(drawn.getLayers().length || pendingFile); }
+
+$("#load").onclick = () => $("#file").click();
+$("#name").addEventListener("input", renderPolyList);
+$("#file").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  const buf = new Uint8Array(await f.arrayBuffer());
+  let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  pendingFile = {name: f.name, b64: btoa(bin)}; editing = null;
+  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
+  const style = {color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.1, weight: 2};
+  try {
+    let gj = null;
+    if (/\.(geo)?json$/i.test(f.name)) gj = JSON.parse(new TextDecoder().decode(buf));
+    else if (/\.kml$/i.test(f.name)) gj = kmlToGeoJSON(new TextDecoder().decode(buf));
+    if (gj) { L.geoJSON(gj, {style}).eachLayer(l => drawn.addLayer(l)); map.fitBounds(drawn.getBounds(), {padding: [50, 50]}); }
+  } catch {}
+  $("#name").value = f.name.replace(/\.[^.]+$/, "").replace(/_\d{4}-\d{2}-\d{2}_\d+$/, "");
+  setStatus(`Loaded ${f.name}. Press Predict.`); ready(); renderPolyList(); e.target.value = "";
+};
+function kmlToGeoJSON(text) {
+  const doc = new DOMParser().parseFromString(text, "text/xml"), polys = [];
+  for (const p of doc.getElementsByTagNameNS("*", "Polygon")) {
+    const ring = el => el ? el.textContent.trim().split(/\s+/).map(c => c.split(",").slice(0, 2).map(Number)) : null;
+    const outer = ring(p.getElementsByTagNameNS("*", "outerBoundaryIs")[0]?.getElementsByTagNameNS("*", "coordinates")[0]);
+    const holes = [...p.getElementsByTagNameNS("*", "innerBoundaryIs")].map(i => ring(i.getElementsByTagNameNS("*", "coordinates")[0]));
+    if (outer) polys.push([outer, ...holes]);
+  }
+  return {type: "Feature", properties: {}, geometry: {type: "MultiPolygon", coordinates: polys}};
+}
+
+// The model runs in a Web Worker (Pyodide). Nothing large downloads until
+// the visitor accepts the welcome note; after that it starts loading at once,
+// so it is usually ready by the time an area is drawn. The choice is
+// remembered in this browser.
+const ACCEPT_KEY = "rightree-accepted";
+let worker = null, pending = null;
+function startWorker() {
+  if (worker) return;
+  worker = new Worker("worker.js");
+  worker.onmessage = e => {
+    const m = e.data;
+    if (m.type === "status") { $("#busyText").textContent = m.text === "Ready" ? "Predicting…" : m.text; return; }
+    if (!pending) return;
+    const {resolve, reject} = pending; pending = null;
+    m.type === "result" ? resolve(m.report) : reject(new Error(m.message));
+  };
+  worker.onerror = e => { if (pending) { pending.reject(new Error(e.message || "The model failed to load.")); pending = null; } };
+}
+const predict = body => new Promise((resolve, reject) => { startWorker(); pending = {resolve, reject}; worker.postMessage({body}); });
+let accepted = false;
+try { accepted = localStorage.getItem(ACCEPT_KEY) === "1"; } catch (e) {}
+let afterAccept = null;
+function askToLoad(then) { afterAccept = then || null; $("#welcome").style.display = "flex"; $("#welcomeOk").focus(); }
+$("#welcomeOk").onclick = () => {
+  accepted = true;
+  try { localStorage.setItem(ACCEPT_KEY, "1"); } catch (e) {}
+  $("#welcome").style.display = "none"; startWorker();
+  const f = afterAccept; afterAccept = null; if (f) f();
+};
+$("#welcomeLater").onclick = () => {
+  afterAccept = null; $("#welcome").style.display = "none";
+  setStatus("Rightree needs a one-off download before it can predict. Press Predict when you're ready.");
+};
+if (accepted) startWorker(); else askToLoad();
+
+$("#run").onclick = async () => {
+  if (!accepted) return askToLoad(() => $("#run").click());
+  finishEdit();
+  const body = {name: $("#name").value, region: $("#region").value};
+  if (pendingFile) Object.assign(body, {file_name: pendingFile.name, file_b64: pendingFile.b64});
+  else body.geojson = drawn.toGeoJSON();
+  $("#busy").style.display = "flex"; $("#run").disabled = true; setStatus("Predicting…");
+  try {
+    const j = await predict(body);
+    show(j); setStatus(`Done: ${j.units.length > 1 ? j.units.length + " units" : "one unit"}.`);
+  } catch (err) { setStatus(err.message, true); }
+  finally { $("#busy").style.display = "none"; ready(); }
+};
+
+// ── Downloads ────────────────────────────────────────────────────────────
+function save(text, name, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click();
+}
+$("#dlCsv").onclick = () => {
+  const cols = ["unit", "stage", "tier", "common_name", "species", "likelihood", "plot_freq", "n_plots", "obs_share", "n_obs",
+                "growth_form", "layers", "category", "bioStatus"];
+  const rowsOut = current.species.map(s => ({...s, likelihood: likelihood(s, stageOf(s, current))}));
+  const cell = v => { v = v ?? ""; return /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v; };
+  save("﻿" + [cols.join(",")].concat(rowsOut.map(s => cols.map(c => cell(s[c])).join(","))).join("\n"),
+       `rightree_${current.id}_species.csv`, "text/csv");
+};
+$("#dlGeo").onclick = () => {
+  const fc = JSON.parse(JSON.stringify(current.units_geojson));
+  for (const f of fc.features) {
+    const u = current.units.find(x => x.unit === f.properties.unit);
+    if (u) Object.assign(f.properties, {area_ha: u.ha}, Object.fromEntries(Object.entries(u.attrs)));
+  }
+  save(JSON.stringify(fc), `rightree_${current.id}_units.geojson`, "application/geo+json");
+};
+
+// ── Results ──────────────────────────────────────────────────────────────
+// What sets each unit apart: the inputs where it sits furthest from the
+// site's other units on the regional 0-1 scale the model uses.
+function apart(u, units) {
+  if (units.length < 2) return [];
+  return Object.keys(u.scaled).map(k => {
+    const others = units.filter(x => x !== u).map(x => x.scaled[k]).filter(v => v != null);
+    if (u.scaled[k] == null || !others.length) return null;
+    // Only where this unit is above (or below) every other unit
+    const up = u.scaled[k] - Math.max(...others), down = u.scaled[k] - Math.min(...others);
+    return {k, d: up > 0 ? up : down < 0 ? down : 0};
+  }).filter(x => x && Math.abs(x.d) >= 0.05).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 3);
+}
+function apartText(u, units) {
+  return apart(u, units).map(({k, d}) => {
+    const lbl = VARS[k][0].replace(/^Aspect: /, "").toLowerCase();
+    const others = units.filter(x => x !== u).map(x => fmtVal(x.attrs[k], k)).join(", ");
+    return `${d > 0 ? "higher" : "lower"} ${lbl} (${fmtVal(u.attrs[k], k)} vs ${others})`;
+  }).join("; ");
+}
+function attrsTable(u, units, groups, wvar) {
+  const multi = units.length > 1;
+  const diffKeys = new Set(multi ? units.flatMap(x => apart(x, units).map(a => a.k)) : []);
+  let h = `<table><thead><tr><th>Input</th>${multi ? units.map(x => `<th class="num">Unit ${x.unit}</th>`).join("") : `<th class="num">Value</th>`}</tr></thead><tbody>`;
+  const rows = Object.entries(groups).map(([g, ks]) => [GROUP_NAMES[g] || g, ks]).concat([["Wetland", [wvar]]]);
+  for (const [g, ks] of rows) {
+    h += `<tr><td class="grp" colspan="${multi ? units.length + 1 : 2}">${g}</td></tr>`;
+    for (const k of ks) {
+      const [label, , , note] = VARS[k] || [k];
+      h += `<tr class="${diffKeys.has(k) ? "diff" : ""}"><td>${esc(label)}${note ? `<div class="hint">${esc(note)}</div>` : ""}</td>` +
+        (multi ? units.map(x => `<td class="num">${fmtVal(x.attrs[k], k)}</td>`).join("") : `<td class="num">${fmtVal(u.attrs[k], k)}</td>`) + `</tr>`;
+    }
+  }
+  return h + `</tbody></table><p class="hint">Medians over the unit's 100 m cells. Climate, terrain and soil count equally;
+    distance to wetland adds half a group.${multi ? " Shaded rows are what separates the units." : ""}</p>`;
+}
+
+function show(j) {
+  current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false;
+  resultLayer.clearLayers(); plotLayer.clearLayers();
+  const multi = j.units.length > 1;
+  // Units are drawn over the site; the site outline stays on top for reference.
+  const ug = L.geoJSON(j.units_geojson, {style: f => multi
+      ? {color: UNIT_COLOURS[(f.properties.unit - 1) % 4], fillColor: UNIT_COLOURS[(f.properties.unit - 1) % 4], weight: 1, fillOpacity: .45}
+      : {stroke: false, fill: false}}).addTo(resultLayer);
+  if (multi) {
+    const seen = new Set();
+    ug.eachLayer(l => { const u = l.feature.properties.unit; if (seen.has(u)) return;
+      let big = null, area = 0;
+      ug.eachLayer(m => { if (m.feature.properties.unit !== u) return; const b = m.getBounds(); const a = (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()); if (a > area) { area = a; big = m; } });
+      seen.add(u); L.tooltip({permanent: true, direction: "center", className: "unit-label"}).setLatLng(big.getBounds().getCenter()).setContent("Unit " + u).addTo(resultLayer); });
+  }
+  if (!drawn.getLayers().length && ug.getLayers().length) L.geoJSON(j.units_geojson, {style: {color: AREA_COLOUR, weight: 2, fillOpacity: .1, fillColor: AREA_COLOUR}}).eachLayer(l => drawn.addLayer(l));
+  drawn.bringToFront();
+  renderPolyList();
+  if (ug.getLayers().length) map.fitBounds(ug.getBounds(), {padding: [40, 40], maxZoom: 16});
+
+  let html = `<div class="filters">${[["", "All layers"]].concat(LAYERS.map(l => [l[0], l[2] === "Climber or epiphyte" ? "Climbers & epiphytes" : l[2]]))
+      .map(([k, nm]) => `<button class="chip${layerFilter === k ? " on" : ""}" data-layer="${k}">${nm}</button>`).join("")}
+    <label title="Species from a single plot or one or two records"><input type="checkbox" id="showPossible"${showPossible ? " checked" : ""}> Show possible</label></div>
+    <p class="evidence">${multi ? `The site holds ${j.units.length} distinct habitats, mapped as units. Each gets its own lists.` : "The site is one habitat, so it is treated as one unit."}
+    ${j.n_on_site ? `${j.n_on_site} records on or within ${j.on_site_buffer_m} m of the site were left out, so existing plantings don't feed the list.` : ""}</p>`;
+  for (const u of j.units) {
+    const stages = j.stages.filter(s => s.unit === u.unit);
+    const covers = Object.entries(u.covers).map(([k, v]) => `${esc(k)} ${Math.round(v * 100)}%`).join(", ");
+    const at = apartText(u, j.units);
+    const pot = (u.potential || []).map(p => `${esc(p.name)} ${Math.round(p.share * 100)}%`).join(", ");
+    html += `<section class="unit" data-unit="${u.unit}">
+      <div class="unit-head" title="Zoom to this unit">${multi ? `<span class="swatch" style="background:${UNIT_COLOURS[(u.unit - 1) % 4]}"></span>` : ""}
+        <div><h2>${multi ? `Unit ${u.unit} · ` : ""}${u.ha.toLocaleString()} ha</h2>
+        <div class="env">${u.temp} °C mean · ${u.rain.toLocaleString()} mm rain · slope ${u.slope}° · ${u.coast_km} km from coast${u.wetland ? " · natural wetland" : ""}<br>Now: ${covers}${pot ? `<br><span title="Eco-index Ecosystem Projector: the ecosystem expected here before people, from Potential Natural Vegetation">Naturally: ${pot}</span>` : ""}</div>
+        ${at ? `<div class="apart"><b>Sets it apart:</b> ${at}</div>` : ""}</div></div>
+      <details class="attrs"><summary>Model inputs${multi ? " for all units" : ""}</summary>${attrsTable(u, j.units, j.groups, j.wetland_var)}</details>
+      <div class="tabs">${stages.map((s, i) => {
+        const cls = !s.enough ? "none" : s.tier === "close" ? "close" : "best";
+        return `<button class="tab" data-i="${i}"><span class="dot ${cls}"></span>${STAGE_SHORT[s.stage] || s.stage}</button>`; }).join("")}</div>
+      <div class="stage"></div></section>`;
+  }
+  html += `<details class="foot"><summary>How to read this</summary>
+    <p><b>Expected</b>: in 40% or more of the similar plots. <b>Likely</b>: in 15% or more (at least 2 plots), or 3 or more records.
+    <b>Possible</b>: one plot or one or two records; can grow there but don't count on it. Hidden unless "Show possible" is ticked.</p>
+    <p><b>C S U G O</b>: canopy, subcanopy, understorey, ground cover, climber or epiphyte. A plant can fill more than one layer
+    (kānuka is canopy in regenerating stands, subcanopy in mature forest). Set by genus from a hand-made table.</p>
+    <p><b>% of plots</b>: share of the most similar NVS survey plots that recorded the species. Plots list everything present, so this is the strongest evidence.
+    <b>% of records</b>: share of nearby iNaturalist and herbarium records. These only show what people chose to record.</p>
+    <p>Similar means within ${j.max_d} on a 0–1 scale across climate, terrain and soil, and not far off in temperature, frost, rainfall or distance to the coast.
+    Best-available lists go out to ${j.fallback_d}.</p>
+    <p>Most NVS plots date from the 1950s–60s and lie in the western ranges. Natives only. A starting list to check on the ground, not a survey.</p></details>`;
+  $("#results").innerHTML = html;
+  const rerenders = [];
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => { layerFilter = c.dataset.layer;
+    document.querySelectorAll(".chip").forEach(x => x.classList.toggle("on", x === c)); rerenders.forEach(f => f()); });
+  $("#showPossible").onchange = e => { showPossible = e.target.checked; rerenders.forEach(f => f()); };
+  document.querySelectorAll(".unit").forEach(sec => {
+    const unit = +sec.dataset.unit, stages = j.stages.filter(s => s.unit === unit);
+    const render = i => { sec.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", +t.dataset.i === i));
+      sec.querySelector(".stage").innerHTML = stageHtml(stages[i], j); drawPlots(stages[i]); bindStage(sec, stages[i], j); };
+    sec.querySelectorAll(".tab").forEach(t => t.onclick = () => render(+t.dataset.i));
+    rerenders.push(() => render(+(sec.querySelector(".tab.on")?.dataset.i ?? 0)));
+    sec.querySelector(".unit-head").onclick = () => { const b = L.latLngBounds([]); ug.eachLayer(l => { if (l.feature.properties.unit === unit) b.extend(l.getBounds()); }); if (b.isValid()) map.fitBounds(b, {maxZoom: 16}); };
+    render(firstGood(stages));
+  });
+}
+function firstGood(stages) { const i = stages.findIndex(s => s.enough && s.tier === "close"); return i >= 0 ? i : Math.max(0, stages.findIndex(s => s.enough)); }
+
+// ── Layers and likelihood ────────────────────────────────────────────────
+const LAYERS = [["canopy", "C", "Canopy"], ["subcanopy", "S", "Subcanopy"], ["understorey", "U", "Understorey"],
+  ["ground", "G", "Ground cover"], ["other", "O", "Climber or epiphyte"]];
+const layersOf = r => { const l = (r.layers || "").split(";").filter(Boolean);
+  return new Set(l.map(x => x === "climber" || x === "epiphyte" ? "other" : x)); };
+let layerFilter = "", showPossible = false;
+// Expected: in 40%+ of similar plots. Likely: 15%+ of plots (2 or more), or
+// 3+ records. Possible: a single plot or one or two records.
+function likelihood(r, s) {
+  const plots = Math.round(r.plot_freq * s.n_plots), recs = Math.round(r.obs_share * s.n_obs);
+  if (r.plot_freq >= 0.4 && plots >= 2) return "Expected";
+  if ((r.plot_freq >= 0.15 && plots >= 2) || recs >= 3) return "Likely";
+  return "Possible";
+}
+const stageOf = (r, j) => j.stages.find(s => s.unit === r.unit && s.stage === r.stage);
+
+function stageHtml(s, j, all) {
+  const name = STAGE_SHORT[s.stage] || s.stage;
+  let h = `<div>${s.enough ? `<span class="badge ${s.tier === "close" ? "close" : "best"}">${s.tier === "close" ? "Close matches" : "Best available"}</span>` : ""}
+    <span class="hint"> ${esc(STAGE_HELP[name] || "")}</span></div>`;
+  const near = s.nearest == null ? (s.stage === "Wetland" ? "" : "no plots pass the climate/coast check") : `nearest plot ${s.nearest.toFixed(2)}`;
+  h += `<div class="evidence">Evidence: ${s.n_plots} plots and ${s.n_obs} records within ${s.limit}${near ? ` (${near})` : ""}.</div>`;
+  if (!s.enough) return h + `<div class="note">Not enough similar sites for a list, even allowing weaker matches.</div>`;
+  if (s.tier !== "close") h += `<div class="note">No close matches. These are the nearest sites that still have a similar climate and distance to the coast.
+    Treat as a lead to check, not a prediction.${s.plots_used.length ? " The plots used are the orange dots on the map." : ""}</div>`;
+  if (s.obs_only && s.stage !== "Wetland") h += `<div class="note plain">Too few survey plots, so this list is from records only. It shows what people have recorded, not what is absent.</div>`;
+  const allRows = j.species.filter(r => r.unit === s.unit && r.stage === s.stage);
+  const usePlots = allRows.some(r => r.plot_freq > 0);
+  const nPossible = allRows.filter(r => likelihood(r, s) === "Possible").length;
+  const rows = allRows.filter(r => (showPossible || likelihood(r, s) !== "Possible") && (!layerFilter || layersOf(r).has(layerFilter)));
+  // A layer filter shows every match; otherwise the top 25 until "Show all".
+  const n = all || layerFilter ? rows.length : Math.min(25, rows.length);
+  const shown = [layerFilter ? LAYERS.find(l => l[0] === layerFilter)[2].toLowerCase() : "", showPossible ? "" : "expected and likely"].filter(Boolean).join(", ");
+  h += `<div class="evidence">${rows.length} of ${allRows.length} species shown${shown ? ` (${shown})` : ""}.${!showPossible && nPossible ? ` ${nPossible} possible species hidden.` : ""}</div>`;
+  if (!rows.length) return h + `<div class="note plain">No species match the filter in this list.</div>`;
+  const max = usePlots ? 1 : Math.max(...rows.map(x => x.obs_share), 0);
+  h += `<table><thead><tr><th>Species</th><th></th><th class="num">${usePlots ? "% of plots" : "% of records"}</th>` +
+    LAYERS.map(([k, ab, nm]) => `<th class="lay" title="${nm}">${ab}</th>`).join("") + `</tr></thead><tbody>`;
+  for (const r of rows.slice(0, n)) {
+    const v = usePlots ? r.plot_freq : r.obs_share, lk = likelihood(r, s), ls = layersOf(r);
+    h += `<tr><td><a class="sp" href="${ll(r.species)}" target="_blank" rel="noopener">${esc(r.common_name || r.species)}</a>
+      ${THREAT(r.category) ? ` <span class="threat" title="NZTCS">${esc(r.category)}</span>` : ""}
+      ${r.common_name ? `<div class="sci">${esc(r.species)}</div>` : ""}</td>
+      <td><span class="lk ${lk[0].toLowerCase()}">${lk}</span></td>
+      <td class="num">${pct(v) || (usePlots && r.obs_share ? `<span class="hint">${pct(r.obs_share)} rec.</span>` : "")}</td>` +
+      LAYERS.map(([k, , nm]) => `<td class="lay" title="${nm}">${ls.has(k) ? "<i></i>" : ""}</td>`).join("") + `</tr>`;
+  }
+  h += `</tbody></table><div class="stage-actions">`;
+  if (rows.length > n) h += `<button class="more">Show all ${rows.length}</button>`;
+  h += `<a class="btn" target="_blank" rel="noopener" href="${LOOKLIKE}?s=${rows.slice(0, n).map(r => encodeURIComponent(r.species)).join("|")}">Open ${n === rows.length ? "these" : "top " + n} in LookLike</a></div>`;
+  return h;
+}
+function bindStage(sec, s, j) { const b = sec.querySelector(".more"); if (b) b.onclick = () => { sec.querySelector(".stage").innerHTML = stageHtml(s, j, true); bindStage(sec, s, j); }; }
+
+function drawPlots(s) {
+  plotLayer.clearLayers();
+  for (const p of s.plots_used || [])
+    L.circleMarker([p.lat, p.lon], {radius: 6, color: "#fff", weight: 2, fillColor: "#FF8C00", fillOpacity: 1})
+      .bindTooltip(`NVS plot ${p.year ?? ""} · distance ${p.d.toFixed(2)}`).addTo(plotLayer);
+}
+
+(async () => {
+  const site = await (await fetch("site.json")).json();
+  const regions = site.regions;
+  if (site.version) document.querySelector("#ver").textContent = site.version;
+  const x = Object.values(regions)[0];
+  if (x && x.doi) document.querySelector("#gbifCite").innerHTML = `${esc(x.citation || "GBIF.org occurrence download")}`.replace(
+      /https:\/\/doi\.org\/\S+/, m => `<a href="${m}" target="_blank" rel="noopener">${m}</a>`);
+  $("#region").innerHTML = Object.keys(regions).map(k => `<option value="${k}">${k}</option>`).join("");
+  const k = Object.keys(regions)[0];
+  if (k) { const rl = L.geoJSON(regions[k].geojson, {style: {color: "#263b27", weight: 1.5, dashArray: "4 4", fill: false}, interactive: false}).addTo(map);
+    map.fitBounds(rl.getBounds()); }
+})();
+</script>
+</body>
+</html>

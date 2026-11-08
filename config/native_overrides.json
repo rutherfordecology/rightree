@@ -1,0 +1,21 @@
+{
+  "_note": "Force a native verdict for a GBIF species name the automatic matcher gets wrong. Keys are GBIF `species` values. nztcs_name is the NZTCS taxon it corresponds to, where there is one. Checked against nztcs.json on 2026-11-09.",
+  "overrides": {
+    "Shawia rani": {"native": true, "nztcs_name": "Olearia rani var. rani", "why": "GBIF genus transfer; NZTCS Olearia rani (Endemic)"},
+    "Shawia furfuracea": {"native": true, "nztcs_name": "Olearia furfuracea", "why": "GBIF genus transfer; NZTCS Olearia (Endemic)"},
+    "Shawia ilicifolia": {"native": true, "nztcs_name": "Olearia ilicifolia", "why": "GBIF genus transfer; NZTCS Olearia (Endemic)"},
+    "Shawia albida": {"native": true, "nztcs_name": "Olearia albida", "why": "GBIF genus transfer; NZTCS Olearia (Endemic)"},
+    "Shawia solandri": {"native": true, "nztcs_name": "Olearia solandri", "why": "GBIF genus transfer; NZTCS Olearia (Endemic)"},
+    "Shawia angulata": {"native": true, "nztcs_name": "Olearia angulata", "why": "GBIF genus transfer; NZTCS Olearia (Endemic)"},
+    "Notelaea neolanceolata": {"native": true, "nztcs_name": "Nestegis lanceolata", "why": "GBIF genus transfer; NZTCS Nestegis (Endemic)"},
+    "Notelaea cunninghamii": {"native": true, "nztcs_name": "Nestegis cunninghamii", "why": "GBIF genus transfer; NZTCS Nestegis (Endemic)"},
+    "Notelaea montana": {"native": true, "nztcs_name": "Nestegis montana", "why": "GBIF genus transfer; NZTCS Nestegis (Endemic)"},
+    "Paratrophis microphylla": {"native": true, "nztcs_name": "Streblus heterophyllus", "why": "GBIF genus transfer; NZTCS Streblus heterophyllus (Endemic)"},
+    "Quintinia acutifolia": {"native": true, "nztcs_name": "Quintinia serrata", "why": "GBIF lumps Q. serrata into Q. acutifolia; NZTCS Quintinia serrata (Endemic)"},
+    "Nertera granadensis": {"native": true, "nztcs_name": "Nertera depressa", "why": "GBIF lumps N. depressa into N. granadensis; NZTCS Nertera depressa (Non-endemic)"},
+    "Urtica incisa": {"native": true, "nztcs_name": "Urtica sykesii", "why": "NZ plants once called U. incisa are U. sykesii in NZTCS (Non-endemic)"},
+    "Hypolepis rugosula": {"native": true, "nztcs_name": null, "why": "native ring fern; NZTCS splits the NZ plants among other Hypolepis names"},
+    "Fuchsia colensoi": {"native": true, "nztcs_name": null, "why": "native hybrid (F. excorticata x F. perscandens), not assessed by NZTCS"},
+    "Melicope mantellii": {"native": true, "nztcs_name": null, "why": "native hybrid (M. simplex x M. ternata), not assessed by NZTCS"}
+  }
+}

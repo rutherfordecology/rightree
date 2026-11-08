@@ -1,0 +1,106 @@
+{
+ "1": {
+  "name": "Pakihi",
+  "group": "Wetland-acidic"
+ },
+ "2": {
+  "name": "Rimu-miro-tōtara/kāmahi forest",
+  "group": "Mid-altitude forest"
+ },
+ "3": {
+  "name": "Hall's tōtara/silver-beech-kāmahi-southern rata forest",
+  "group": "High-altitude forest"
+ },
+ "4": {
+  "name": "Scrub, tussock-grassland and herbfield above treeline",
+  "group": "Scrub"
+ },
+ "5": {
+  "name": "Hall's tōtara-miro-rimu/kāmahi-silver beech-southern rata forest",
+  "group": "Mid-altitude forest"
+ },
+ "6": {
+  "name": "Hall's tōtara-miro/kāmahi-southern rata-broadleaf forest",
+  "group": "Mid-altitude forest"
+ },
+ "7": {
+  "name": "Mātai-tōtara/black/mountain beech forest",
+  "group": "Mid-altitude forest"
+ },
+ "8": {
+  "name": "Silver beech forest",
+  "group": "High-altitude forest"
+ },
+ "9": {
+  "name": "Fen",
+  "group": "Wetland-acidic"
+ },
+ "10": {
+  "name": "Swamp",
+  "group": "Wetland-fertile"
+ },
+ "11": {
+  "name": "Bog",
+  "group": "Wetland-acidic"
+ },
+ "12": {
+  "name": "Rimu-miro/kāmahi-red beech-hard beech forest",
+  "group": "Mid-altitude forest"
+ },
+ "13": {
+  "name": "Seepage",
+  "group": "Wetland-fertile"
+ },
+ "14": {
+  "name": "Marsh",
+  "group": "Wetland-fertile"
+ },
+ "15": {
+  "name": "Red beech-silver beech forest",
+  "group": "High-altitude forest"
+ },
+ "16": {
+  "name": "Hall's tōtara/broadleaf forest",
+  "group": "High-altitude forest"
+ },
+ "17": {
+  "name": "Mātai-tōtara-kahikatea-rimu/broadleaf-fuchsia forest",
+  "group": "Mid-altitude forest"
+ },
+ "18": {
+  "name": "Kahikatea-mātai/tawa-māhoe forest",
+  "group": "Lowland forest"
+ },
+ "19": {
+  "name": "Rimu-mātai-miro-tōtara/kāmahi forest",
+  "group": "Mid-altitude forest"
+ },
+ "20": {
+  "name": "Dunelands",
+  "group": "Dunes"
+ },
+ "21": {
+  "name": "Rimu/tawa-kāmahi forest",
+  "group": "Lowland forest"
+ },
+ "22": {
+  "name": "Kahikatea-pukatea-tawa forest",
+  "group": "Lowland forest"
+ },
+ "23": {
+  "name": "Mātai-kahikatea-tōtara forest",
+  "group": "Lowland forest"
+ },
+ "24": {
+  "name": "Gumland",
+  "group": "Wetland-acidic"
+ },
+ "25": {
+  "name": "Rimu-miro/tāwari-red beech-kāmahi-tawa forest",
+  "group": "Mid-altitude forest"
+ },
+ "26": {
+  "name": "Kauri/taraire-kohekohe-tawa forest",
+  "group": "Lowland forest"
+ }
+}
