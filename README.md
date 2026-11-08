@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.16.1). First predictions run; native records are tagged with environment,
+Status: prototype (v0.17.0). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
@@ -49,7 +49,8 @@ Builds the site into `site/` and serves it at http://127.0.0.1:7882. Draw the
 site (same tools as Occurd), or load a KML exported from Occurd, and press
 Predict. Distinct habitats are mapped as units, each with its model inputs
 and what sets it apart. Lists show by unit and stage, with species linked to
-LookLike. Download the species CSV or the units as GeoJSON.
+LookLike. Download the species CSV, the units as GeoJSON, or a printable
+plant checklist for the field.
 
 The model runs in the browser (Pyodide, in a Web Worker), so the site is
 plain files and needs no server. The grids are cut into 256-cell tiles

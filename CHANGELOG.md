@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.17.0 (November 2026)
+
+- **Plant checklist.** A "Plant checklist" button opens a print-ready field
+  checklist for the site (print, or save as PDF). It lists every species
+  rated Expected or Likely in any unit and stage with enough evidence (plus
+  Possible when "Show possible" is ticked), once each, grouped by main layer
+  (canopy, subcanopy, understorey, ground cover, climbers and epiphytes).
+  Each row has a tick box, common and scientific name, likelihood, the
+  stages and units it came from, threat status and space for notes. The
+  header has the site's units, current cover and potential ecosystem, and
+  blanks for surveyor, date and weather. If the browser blocks the new tab,
+  the checklist downloads as an HTML file instead.
+
 ## v0.16.1 (November 2026)
 
 - **Welcome note.** The page explains that the model runs in the browser and

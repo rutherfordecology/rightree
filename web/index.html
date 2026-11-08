@@ -167,6 +167,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
       <span style="flex:1"></span>
       <button id="dlCsv" disabled title="Species lists for every unit and stage">Download species CSV</button>
       <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON">Units GeoJSON</button>
+      <button id="dlCheck" disabled title="Expected and likely species as a printable field checklist (save as PDF from the print dialog)">Plant checklist</button>
     </div>
     <div id="polyList"></div>
     <div id="status" class="hint">Draw an area with the polygon or rectangle tool on the map, or load a file.</div>
@@ -389,7 +390,7 @@ function deleteArea() {
   if (editing && editing.editing) editing.editing.disable();
   editing = null; pendingFile = null; current = null;
   drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
-  document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true;
+  document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true; document.querySelector("#dlCheck").disabled = true;
   document.querySelector("#results").innerHTML = EMPTY_RESULTS;
   document.querySelector("#name").value = "";
   renderPolyList(); ready();
@@ -490,6 +491,84 @@ $("#dlCsv").onclick = () => {
   save("﻿" + [cols.join(",")].concat(rowsOut.map(s => cols.map(c => cell(s[c])).join(","))).join("\n"),
        `rightree_${current.id}_species.csv`, "text/csv");
 };
+// Field checklist: every species rated Expected or Likely (plus Possible if
+// "Show possible" is ticked) in any unit and stage with enough evidence, once
+// each, grouped by its main layer. Opens print-ready in a new tab.
+const LK_RANK = {Expected: 0, Likely: 1, Possible: 2};
+const STAGE_CODE = {"Mature forest": "M", "Regenerating": "R", "Open ground": "O", "Wetland": "W"};
+function checklistHtml(j) {
+  const sp = new Map();
+  for (const r of j.species) {
+    const s = stageOf(r, j);
+    if (!s || !s.enough) continue;
+    const lk = likelihood(r, s);
+    if (lk === "Possible" && !showPossible) continue;
+    const e = sp.get(r.species) || {r, lk, stages: new Set(), units: new Set()};
+    if (LK_RANK[lk] < LK_RANK[e.lk]) e.lk = lk;
+    e.stages.add(STAGE_CODE[STAGE_SHORT[r.stage]] || "?"); e.units.add(r.unit);
+    sp.set(r.species, e);
+  }
+  const groups = LAYERS.map(([k, , nm]) => [k, nm === "Climber or epiphyte" ? "Climbers and epiphytes" : nm, []]).concat([["", "Other", []]]);
+  for (const e of sp.values()) {
+    const ls = layersOf(e.r);
+    (groups.find(g => g[0] && ls.has(g[0])) || groups[groups.length - 1])[2].push(e);
+  }
+  const multi = j.units.length > 1, order = ["M", "R", "O", "W"];
+  const site = esc(document.querySelector("#name").value.trim() || j.site || "Site");
+  const ha = j.units.reduce((a, u) => a + u.ha, 0);
+  const today = new Date().toLocaleDateString("en-NZ", {day: "numeric", month: "long", year: "numeric"});
+  let rows = "";
+  for (const [, nm, list] of groups) {
+    if (!list.length) continue;
+    list.sort((a, b) => LK_RANK[a.lk] - LK_RANK[b.lk] || (a.r.common_name || a.r.species).localeCompare(b.r.common_name || b.r.species));
+    rows += `<tr class="grp"><th colspan="${multi ? 7 : 6}">${nm} <span>(${list.length})</span></th></tr>`;
+    for (const e of list) {
+      const r = e.r;
+      rows += `<tr><td class="box">☐</td><td><b>${esc(r.common_name || "")}</b>${r.common_name ? "<br>" : ""}<i>${esc(r.species)}</i></td>
+        <td>${e.lk}</td><td>${order.filter(c => e.stages.has(c)).join(" ")}</td>${multi ? `<td>${[...e.units].sort().join(", ")}</td>` : ""}
+        <td>${THREAT(r.category) ? esc(r.category) : ""}</td><td class="notes"></td></tr>`;
+    }
+  }
+  const units = j.units.map(u => `<li>${multi ? `Unit ${u.unit}: ` : ""}${u.ha.toLocaleString()} ha, ${u.temp} °C mean, ${u.rain.toLocaleString()} mm rain, ` +
+    `slope ${u.slope}°. Now: ${Object.entries(u.covers).map(([k, v]) => `${esc(k)} ${Math.round(v * 100)}%`).join(", ")}.` +
+    `${(u.potential || []).length ? ` Naturally: ${u.potential.map(p => `${esc(p.name)} ${Math.round(p.share * 100)}%`).join(", ")}.` : ""}</li>`).join("");
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Plant checklist: ${site}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font: 12px/1.35 "Inter Tight", Arial, sans-serif; color: #000; background: #fff; margin: 16px; }
+  h1 { font-size: 20px; margin: 0 0 2px; color: #263b27; } .sub { color: #5F6B66; margin-bottom: 8px; }
+  .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 16px; margin: 8px 0; }
+  .meta div { border-bottom: 1px solid #999; padding: 10px 0 2px; color: #5F6B66; }
+  ul { margin: 6px 0 10px; padding-left: 18px; } .key { color: #5F6B66; margin: 6px 0 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; vertical-align: top; padding: 4px 6px; border-bottom: 1px solid #ccc; }
+  thead th { border-bottom: 2px solid #263b27; font-size: 11px; }
+  tr.grp th { background: #263b27; color: #fff; padding: 5px 6px; } tr.grp span { font-weight: 400; }
+  td.box { font-size: 16px; width: 18px; } td.notes { width: 30%; }
+  tr { break-inside: avoid; } .foot { color: #5F6B66; margin-top: 12px; font-size: 11px; }
+  .bar { margin-bottom: 12px; } .bar button { font: inherit; padding: 6px 12px; border: 1px solid #263b27; background: #263b27; color: #fff; cursor: pointer; }
+  @media print { .bar { display: none; } body { margin: 0; } @page { size: A4; margin: 12mm; } thead { display: table-header-group; } }
+</style></head><body>
+<div class="bar"><button onclick="print()">Print or save as PDF</button></div>
+<h1>Plant checklist: ${site}</h1>
+<div class="sub">Rightree ${esc(document.querySelector("#ver").textContent)} · made ${today} · ${ha.toLocaleString()} ha · ${sp.size} species</div>
+<div class="meta"><div>Surveyor</div><div>Date</div><div>Weather</div></div>
+<ul>${units}</ul>
+<div class="key">Native species expected at the site, from where they grow in environmentally similar places nearby.
+<b>Expected</b>: in 40%+ of similar survey plots. <b>Likely</b>: in 15%+ of plots, or 3+ records.${showPossible ? " <b>Possible</b>: a single plot or one or two records." : ""}
+Stage: M mature forest, R regenerating, O open ground, W wetland.</div>
+<table><thead><tr><th></th><th>Species</th><th>Likelihood</th><th>Stage</th>${multi ? "<th>Unit</th>" : ""}<th>Threat status</th><th>Notes</th></tr></thead>
+<tbody>${rows}</tbody></table>
+<div class="foot">A starting list to check on the ground, not a survey. Species records: GBIF.org (NVS, iNaturalist NZ, NZ herbaria);
+environment: NZEnvDS v1.1; land cover: LCDB v6; wetlands: GDC 2022; potential ecosystems: Eco-index Ecosystem Projector (CC BY 4.0);
+names and threat status: NZTCS. Rightree by Rutherford Ecology.</div>
+</body></html>`;
+}
+$("#dlCheck").onclick = () => {
+  const html = checklistHtml(current);
+  const w = window.open(URL.createObjectURL(new Blob([html], {type: "text/html"})), "_blank");
+  if (!w) save(html, `rightree_${current.id}_checklist.html`, "text/html");   // pop-up blocked: download it instead
+};
 $("#dlGeo").onclick = () => {
   const fc = JSON.parse(JSON.stringify(current.units_geojson));
   for (const f of fc.features) {
@@ -537,7 +616,7 @@ function attrsTable(u, units, groups, wvar) {
 }
 
 function show(j) {
-  current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false;
+  current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false; $("#dlCheck").disabled = false;
   resultLayer.clearLayers(); plotLayer.clearLayers();
   const multi = j.units.length > 1;
   // Units are drawn over the site; the site outline stays on top for reference.
