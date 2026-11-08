@@ -20,8 +20,8 @@ PY = ["predict.py", "gridio.py", "nztm.py"]
 
 SITE_README = """# Rightree
 
-Right tree, right place. Draw a site in Tairāwhiti (Gisborne) and get the
-native plant species expected there, from where they grow in environmentally
+Right tree, right place. Draw a site in Tairāwhiti (Gisborne) or Te
+Matau-a-Māui (Hawke's Bay) and get the native plant species expected there, from where they grow in environmentally
 similar places nearby. The model runs in your browser.
 
 Source code: https://github.com/rutherfordecology/rightree (main branch).
@@ -31,19 +31,22 @@ This branch is built by `scripts/build_site.py`; don't edit it here.
 
 Each dataset keeps its own licence:
 
-- **Species records:** GBIF.org occurrence download, doi:10.15468/dl.x7fpqf,
-  including the National Vegetation Survey Databank (NVS, Manaaki Whenua –
+- **Species records:** GBIF.org occurrence downloads, Tairāwhiti
+  doi:10.15468/dl.x7fpqf and Hawke's Bay doi:10.15468/dl.t5dcc2, including the National Vegetation Survey Databank (NVS, Manaaki Whenua –
   Landcare Research; CC BY-NC 4.0, non-commercial use only), iNaturalist NZ
   and New Zealand herbaria. Native vascular plants located within 100 m.
 - **Environment:** New Zealand Environmental Data Stack (NZEnvDS) v1.1,
   McCarthy et al. 2021; CC BY 4.0. Clipped to the region and tiled.
 - **Land cover:** Land Cover Database v6, Manaaki Whenua – Landcare Research;
   CC BY 4.0.
-- **Wetlands:** Gisborne District Council Regional Wetland Assessment 2022;
-  CC BY 4.0.
+- **Wetlands:** Tairāwhiti: Gisborne District Council Regional Wetland
+  Assessment 2022; CC BY 4.0. Hawke's Bay: Freshwater Ecosystems of New
+  Zealand (FENZ) current wetlands, Department of Conservation, via Burge
+  (2022), doi:10.7931/f77d-vw23; CC BY 4.0.
 - **Potential natural ecosystems:** this work uses a derivative of
   'Ecosystem Projector for NZ' by Eco-index (based on Potential Natural
-  Vegetation, Manaaki Whenua), used under CC BY 4.0; gridded to 100 m.
+  Vegetation, Manaaki Whenua), used under CC BY 4.0; gridded to 100 m
+  (Tairāwhiti only for now).
 - **Names:** New Zealand Threat Classification System (Department of
   Conservation).
 - **Region boundary:** © OpenStreetMap contributors (ODbL).
@@ -70,7 +73,10 @@ def main():
             "regions": {}}
     genera = set()
     env_root = ROOT / "data" / "env"
-    for env in sorted(p for p in env_root.iterdir() if (p / "tiles" / "grid.json").exists()):
+    meta = json.loads((ROOT / "config" / "regions.json").read_text(encoding="utf-8"))
+    order = [k for k in meta if not k.startswith("_")]
+    envs = [p for p in env_root.iterdir() if (p / "tiles" / "grid.json").exists()]
+    for env in sorted(envs, key=lambda p: order.index(p.name) if p.name in order else 99):
         r = env.name
         shutil.copytree(env / "tiles", data / "env" / r / "tiles")
         for f in ["lcdb_classes.json", "region_stats.json", "potential_ecosystem_classes.json"]:
@@ -87,7 +93,8 @@ def main():
         genera |= set(names.str.split().str[0])
         cite = json.loads((ROOT / "data" / f"citation_{r}.json").read_text(encoding="utf-8"))
         geo = json.loads((env / "region_osm_nominatim.json").read_text(encoding="utf-8"))[0]
-        site["regions"][r] = {"name": geo.get("display_name", r), "geojson": geo["geojson"],
+        site["regions"][r] = {"name": geo.get("display_name", r), "label": meta.get(r, {}).get("label", r),
+                              "wetlands": meta.get(r, {}).get("wetlands", ""), "geojson": geo["geojson"],
                               "citation": cite.get("citation"), "doi": cite.get("doi")}
 
     # Common names: only genera that occur in the records, from Occurd's NZTCS file

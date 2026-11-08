@@ -121,6 +121,8 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
 #welcome p { margin: 0 0 10px; }
 #welcome .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
 #welcome .primary { background: var(--slate); color: #fff; }
+#welcome .regpick { display: flex; gap: 10px; align-items: center; margin: 4px 0 12px; font-weight: 600; }
+#welcome .regpick select { flex: 1; }
 
 /* Occurd's Leaflet / Leaflet.draw overrides */
 .leaflet-container { font-family: var(--font); }
@@ -194,7 +196,7 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
         NVS data are for non-commercial use.</li>
       <li><b>Environment:</b> New Zealand Environmental Data Stack (NZEnvDS) v1.1, McCarthy et al. 2021; CC BY 4.0.</li>
       <li><b>Land cover:</b> Land Cover Database v6 (LCDB), Manaaki Whenua – Landcare Research, via LRIS; CC BY 4.0.</li>
-      <li><b>Wetlands:</b> Gisborne District Council Regional Wetland Assessment 2022 (Morphum Environmental); CC BY 4.0.</li>
+      <li><b>Wetlands:</b> <span id="wetCite">Gisborne District Council Regional Wetland Assessment 2022 (Morphum Environmental); CC BY 4.0.</span></li>
       <li><b>Potential natural ecosystems:</b> this work uses a derivative of “Ecosystem Projector for NZ” by
         <a href="https://eco-index.nz/" target="_blank" rel="noopener">Eco-index</a> (based on Potential Natural Vegetation,
         Manaaki Whenua), used under CC BY 4.0; gridded to 100 m.</li>
@@ -218,7 +220,8 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
   <div class="box">
     <h2 id="welcomeTitle">Welcome to Rightree</h2>
     <div class="body">
-      <p>Rightree lists the native plants expected at a site in Tairāwhiti, from where they grow in similar places nearby.</p>
+      <p>Rightree lists the native plants expected at a site, from where they grow in similar places nearby.</p>
+      <label class="regpick">Your region <select id="welcomeRegion"></select></label>
       <p>The model runs in your browser, so nothing you draw leaves your computer. To do that it downloads about
         <b>45 MB once</b> (Python and its maths libraries), which your browser keeps for next time. Each site then
         loads a few MB of map data.</p>
@@ -814,13 +817,29 @@ function drawPlots(s) {
   const site = await (await fetch("site.json")).json();
   const regions = site.regions;
   if (site.version) document.querySelector("#ver").textContent = site.version;
-  const x = Object.values(regions)[0];
-  if (x && x.doi) document.querySelector("#gbifCite").innerHTML = `${esc(x.citation || "GBIF.org occurrence download")}`.replace(
+  // Region: chosen on the welcome note or in the sidebar, remembered in this
+  // browser. Switching shows its boundary and its data credits.
+  const opts = Object.entries(regions).map(([k, r]) => `<option value="${k}">${esc(r.label || k)}</option>`).join("");
+  $("#region").innerHTML = opts; $("#welcomeRegion").innerHTML = opts;
+  let regionLayer = null;
+  function setRegion(k, fit) {
+    if (!regions[k]) k = Object.keys(regions)[0];
+    if (!k) return;
+    const r = regions[k];
+    $("#region").value = k; $("#welcomeRegion").value = k;
+    try { localStorage.setItem("rightree-region", k); } catch (e) {}
+    if (regionLayer) map.removeLayer(regionLayer);
+    regionLayer = L.geoJSON(r.geojson, {style: {color: "#263b27", weight: 1.5, dashArray: "4 4", fill: false}, interactive: false}).addTo(map);
+    if (fit) map.fitBounds(regionLayer.getBounds());
+    document.querySelector("#gbifCite").innerHTML = esc(r.citation || "GBIF.org occurrence download").replace(
       /https:\/\/doi\.org\/\S+/, m => `<a href="${m}" target="_blank" rel="noopener">${m}</a>`);
-  $("#region").innerHTML = Object.keys(regions).map(k => `<option value="${k}">${k}</option>`).join("");
-  const k = Object.keys(regions)[0];
-  if (k) { const rl = L.geoJSON(regions[k].geojson, {style: {color: "#263b27", weight: 1.5, dashArray: "4 4", fill: false}, interactive: false}).addTo(map);
-    map.fitBounds(rl.getBounds()); }
+    if (r.wetlands) document.querySelector("#wetCite").textContent = r.wetlands;
+  }
+  let saved = null;
+  try { saved = localStorage.getItem("rightree-region"); } catch (e) {}
+  setRegion(saved, true);
+  $("#region").onchange = e => setRegion(e.target.value, true);
+  $("#welcomeRegion").onchange = e => setRegion(e.target.value, true);
 })();
 </script>
 </body>

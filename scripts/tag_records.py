@@ -2,7 +2,8 @@
 
 - LCDB v6: exact polygon. Cover at the LCDB date nearest the record's year
   (1996 for anything older, which is most NVS plots), plus 2023 cover.
-- GDC wetlands: exact polygon (class, status, confidence), inside the region.
+- Wetlands: exact polygon (class, status, confidence): GDC's survey in Gisborne,
+  FENZ elsewhere.
 - Environmental layers: value of the 100 m cell the record falls in.
 
 Usage:
@@ -74,8 +75,10 @@ def main():
         (qi, _), d = shapely.STRtree(woody).query_nearest(pts[sel], max_distance=WOODY_MAX_M, return_distance=True)
         df.loc[df.index[sel[qi]], "dist_woody_m"] = d
 
-    # GDC wetlands
-    tree, _, props = load_polys(env / "gdc_wetlands.geojson", ["wl_class", "wl_status", "confidence"])
+    # Wetland polygons: the council survey where there is one (Gisborne), else
+    # FENZ (fetch_fenz_wetlands.py). Columns keep their gdc_ names either way.
+    wl_path = env / "wetlands.geojson" if (env / "wetlands.geojson").exists() else env / "gdc_wetlands.geojson"
+    tree, _, props = load_polys(wl_path, ["wl_class", "wl_status", "confidence"])
     i = hit(tree, pts)
     for f in ["wl_class", "wl_status", "confidence"]:
         df[f"gdc_{f}"] = [props.at[j, f] if j >= 0 else None for j in i]
@@ -101,7 +104,7 @@ def main():
             filled = a[ir, ic]
             filled[dist * abs(s.transform.a) > FILL_M] = np.nan
             if tif.stem == "distance_wetland":
-                filled = a                  # outside the GDC region stays unknown
+                filled = a                  # outside a council survey's region stays unknown
         df[f"env_{tif.stem}"] = filled[rr, cc]
 
     out = root / "data" / f"records_{name}_tagged.csv.gz"
@@ -112,7 +115,7 @@ def main():
     t = df.groupby("lcdb_at_record").agg(records=("species", "size"), species=("species", "nunique"),
                                          nvs_visits=("visit", lambda s: s[df.loc[s.index, "source"] == "NVS"].nunique()))
     print(t.sort_values("records", ascending=False).head(15).to_string())
-    print(f"\nIn a GDC wetland polygon: {df['gdc_wl_class'].notna().sum():,} records, "
+    print(f"\nIn a wetland polygon: {df['gdc_wl_class'].notna().sum():,} records, "
           f"{df.loc[df['gdc_wl_class'].notna(), 'species'].nunique()} species")
     print(f"Records missing any env value: {df.filter(like='env_').drop(columns='env_distance_wetland').isna().any(axis=1).sum()}")
 

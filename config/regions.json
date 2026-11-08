@@ -1,0 +1,11 @@
+{
+ "_note": "Display names and wetland credits per region, used by scripts/build_site.py. Order sets the order on the page.",
+ "tairawhiti": {
+  "label": "Tairāwhiti (Gisborne)",
+  "wetlands": "Gisborne District Council Regional Wetland Assessment 2022 (Morphum Environmental); CC BY 4.0."
+ },
+ "hawkesbay": {
+  "label": "Te Matau-a-Māui (Hawke's Bay)",
+  "wetlands": "Freshwater Ecosystems of New Zealand (FENZ) current wetlands, Department of Conservation, via Burge (2022), doi:10.7931/f77d-vw23; CC BY 4.0. Extent about 1999–2003; small wetlands may be missing."
+ }
+}

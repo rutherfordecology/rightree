@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.19.0 (November 2026)
+
+- **Hawke's Bay.** A second region, Te Matau-a-Māui (Hawke's Bay). Visitors
+  choose the region in the welcome box (or the sidebar), and the map zooms to
+  it; the choice is remembered. Records: GBIF.org download
+  doi:10.15468/dl.t5dcc2 (47,339 native records kept). Wetlands come from the
+  national FENZ current-wetland layer (`scripts/fetch_fenz_wetlands.py`), as
+  Hawke's Bay has no public regional wetland survey. No potential-ecosystem
+  ("Naturally") line there yet: the Eco-index export covers Gisborne only.
+- Region labels and wetland credits are in `config/regions.json`.
+- Native status: ten more names matched, mostly mountain plants and genus
+  transfers (Styphelia nesophila, Coprosma pumila, red tussock, Shawia
+  species). Ten more Gisborne records count as native as a result.
+- Growth forms for 82 more genera.
+- Hawke's Bay check sites (`hb-*`) in `config/test_sites.json`.
+
 ## v0.18.0 (November 2026)
 
 - **Two-column checklist.** The Word checklist now lists species in two

@@ -83,7 +83,8 @@ MIN_PLOTS_FB, MIN_OBS_FB = 3, 10
 UNIT_MIN_D, UNIT_MIN_SHARE = 0.05, 0.10
 MAX_CELLS = 20_000      # largest area accepted, in 100 m cells (ha)
 ON_SITE_BUFFER_M = 100  # records this close to the site are left out of the evidence
-NATURAL_WETLAND = {"NPS:FW Natural Wetland", "NPS Natural", "Induced"}
+NATURAL_WETLAND = {"NPS:FW Natural Wetland", "NPS Natural", "Induced",   # GDC survey
+                   "FENZ current wetland"}                             # FENZ (other regions)
 
 
 def transform_vals(df):

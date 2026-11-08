@@ -9,8 +9,9 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.18.0). First predictions run; native records are tagged with environment,
-land cover and wetlands. See
+Status: prototype (v0.19.0). Two regions: Tairāwhiti (Gisborne) and Te Matau-a-Māui
+(Hawke's Bay); visitors pick one when they start. Native records are tagged with
+environment, land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
 ## Building a region's data
@@ -28,12 +29,18 @@ python scripts/load_gbif.py data/<downloadkey>.zip <name>
 python scripts/native_status.py <name>      # review table of native verdicts
 python scripts/summarise_gbif.py <name>
 python scripts/fetch_env.py <name> <minlon,minlat,maxlon,maxlat> 50
-python scripts/fetch_gdc_wetlands.py <name>
+python scripts/fetch_gdc_wetlands.py <name>    # Gisborne; elsewhere fetch_fenz_wetlands.py <name>
 python scripts/fetch_lcdb.py <name> <minlon,minlat,maxlon,maxlat> 50
 python scripts/tag_records.py <name>
+python scripts/make_tiles.py <name>
 ```
 
-`fetch_gdc_wetlands.py` is Gisborne-only. Native status needs Node and the
+`fetch_gdc_wetlands.py` is Gisborne-only; other regions use the national FENZ
+current-wetland layer (`fetch_fenz_wetlands.py`, mapped about 1999–2003, so
+small wetlands can be missing). Add the region's label and wetland credit to
+`config/regions.json`, and check `native_status.py`'s not-native list and the
+genera missing from `config/growth_forms.json` (new regions bring new names).
+Potential ecosystems are optional: `load_ecoindex.py <export.zip> <name>`. Native status needs Node and the
 Occurd repo checked out next to this one (it uses Occurd's NZTCS and NZOR name
 files and the but-is-it-threatened resolver).
 
@@ -98,7 +105,7 @@ Writes `report.md`, `report.json`, `species.csv` and `units.geojson` to
 4. **Lists.** Plot share is the share of the closest NVS plots that recorded
    each species; plots list everything present, so this is the strongest
    evidence. Observation share is the same from iNaturalist and herbarium
-   records, which are presence-only. A unit with a natural GDC wetland also
+   records, which are presence-only. A unit with a natural mapped wetland (GDC or FENZ) also
    gets a wetland list. Where evidence is too thin, the report says so.
 5. **Fallback.** If a stage has no close sites, the report shows the nearest
    ones that still pass the veto (up to 0.35), headed "best available, not
