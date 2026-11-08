@@ -514,7 +514,7 @@ function stageHtml(s, j, all) {
   const n = all ? rows.length : Math.min(25, rows.length);
   const usePlots = rows.some(r => r.plot_freq > 0);
   const max = usePlots ? 1 : Math.max(...rows.map(x => x.obs_share), 0);
-  h += `<table><thead><tr><th>Species <span class="hint">(opens in LookLike)</span></th><th class="num">${usePlots ? "% of plots" : "% of records"}</th><th></th></tr></thead><tbody>`;
+  h += `<table><thead><tr><th>Species</th><th class="num">${usePlots ? "% of plots" : "% of records"}</th><th></th></tr></thead><tbody>`;
   for (const r of rows.slice(0, n)) {
     const v = usePlots ? r.plot_freq : r.obs_share;
     h += `<tr><td><a class="sp" href="${ll(r.species)}" target="_blank" rel="noopener">${esc(r.common_name || r.species)}</a>

@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.12.2 (November 2026)
+
+- Removed "(opens in LookLike)" from the species table heading.
+
 ## v0.12.1 (November 2026)
 
 - The map page shows the version next to the title. `serve.py` reads it from
