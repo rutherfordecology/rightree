@@ -36,6 +36,21 @@ landowner: "this species was recorded in 62% of sites like yours".
 
 Each layer's licence needs checking before anything is published.
 
+**In use (v0.2.0): NZEnvDS v1.1** (McCarthy et al. 2021, doi:10.20417/nzjecol.45.31;
+data doi:10.7931/m6rm-vz40; CC BY 4.0). It has 72 national layers at 100 m in
+NZTM. We take 23:
+- climate: mean annual temperature, minimum temperature of the coldest month,
+  GDD5, annual rainfall, annual water deficit, October VPD, solar radiation,
+  wind
+- terrain: elevation, slope, northness, eastness, wetness, topographic
+  position, distance to coast
+- soil: the 8 Fundamental Soil Layers classes (drainage, pH, age, particle
+  size, acid P, calcium, induration, chemical limitations)
+
+NZEnvDS has no geology, so QMAP is still to add. The soil layers are ordinal
+classes, not measurements, so treat them as ordinal in the distance measure.
+Land cover (LCDB) is also still to add.
+
 ## Occurrence data
 
 - **GBIF:** presence-only. Filter to coordinate uncertainty of 100 m or

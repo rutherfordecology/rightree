@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.0 (November 2026)
+
+- Environmental layers. `scripts/fetch_env.py` pulls 23 NZEnvDS v1.1 layers
+  (climate, terrain and Fundamental Soil Layers; NZTM, 100 m, CC BY 4.0) out of
+  the 4.4 GB national zip with range requests. It clips each layer to the
+  region plus a margin and deletes the national copy straight away. Gisborne
+  plus 50 km comes to 68 MB.
+- `scripts/remote_zip.py` lists or extracts members of a large remote zip
+  without downloading it all.
+
 ## v0.1.0 (November 2026)
 
 - First data in. `scripts/load_gbif.py` reads a GBIF download zip from Occurd's
