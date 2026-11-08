@@ -40,6 +40,21 @@ button:hover, .btn:hover { background: var(--hover); }
 button.primary { background: #263b27; color: #fff; border-color: #263b27; font-weight: 600; }
 button:disabled { opacity: .4; cursor: default; }
 .hint { color: var(--grey); font-size: 12.5px; }
+/* Upload area: a dashed drop zone; Predict below it */
+.dropzone { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; white-space: normal;
+  padding: 12px 14px; border: 1.5px dashed var(--slate); background: var(--bg); font-weight: 400; }
+.dropzone.over { background: var(--hover); border-style: solid; }
+.dz-icon { font-size: 20px; line-height: 1; color: var(--slate); }
+button.run { width: 100%; padding: 9px 12px; }
+/* Download area: its own shaded panel under the controls */
+#downloads { padding: 10px 18px 12px; background: var(--soft); border-bottom: 1px solid var(--rule); border-left: 4px solid var(--slate); }
+#downloads.off { border-left-color: var(--rule); }
+.dl-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.dl-head .hint { margin-left: auto; }
+.dl-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dl-row button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; white-space: normal; text-align: left; }
+.dl-row button span { font-size: 11.5px; color: var(--grey); font-weight: 400; }
+@media (max-width: 700px) { .dl-row { grid-template-columns: 1fr; } }
 /* Area list */
 #polyList:empty { display: none; }
 .poly-item { display: flex; align-items: center; gap: 6px; padding: 4px 0 4px 10px; border-left: 3px solid #C8611A; font-size: 13px; }
@@ -161,18 +176,24 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
       <input id="name" type="text" placeholder="Site name (optional)">
       <select id="region" title="Region data"></select>
     </div>
-    <div class="row">
-      <button id="load" title="Load a KML, KMZ or GeoJSON">Load file…</button>
-      <input id="file" type="file" accept=".kml,.kmz,.geojson,.json" hidden>
-      <button id="run" class="primary" disabled>Predict</button>
-      <span style="flex:1"></span>
-      <button id="dlCsv" disabled title="Species lists for every unit and stage">Download species CSV</button>
-      <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON">Units GeoJSON</button>
-      <button id="dlCheck" disabled title="Expected and likely species as a Word field checklist">Plant checklist (Word)</button>
-    </div>
+    <button id="load" class="dropzone" title="Load a KML, KMZ or GeoJSON">
+      <span class="dz-icon" aria-hidden="true">⇪</span>
+      <span><b>Upload a site boundary</b><br><span class="hint">Drop a KML, KMZ or GeoJSON here, or click to choose. Or draw on the map.</span></span>
+    </button>
+    <input id="file" type="file" accept=".kml,.kmz,.geojson,.json" hidden>
     <div id="polyList"></div>
+    <button id="run" class="primary run" disabled>Predict</button>
     <div id="status" class="hint">Draw an area with the polygon or rectangle tool on the map, or load a file.</div>
   </div>
+  <section id="downloads" class="off" aria-label="Download results">
+    <div class="dl-head"><span class="dz-icon" aria-hidden="true">⇩</span> <b>Download results</b>
+      <span class="hint" id="dlHint">Available after Predict.</span></div>
+    <div class="dl-row">
+      <button id="dlCheck" disabled title="Expected and likely species as a Word field checklist"><b>Plant checklist</b><span>Word</span></button>
+      <button id="dlCsv" disabled title="Species lists for every unit and stage"><b>Species lists</b><span>CSV</span></button>
+      <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON"><b>Units map</b><span>GeoJSON</span></button>
+    </div>
+  </section>
   <div id="results">
     <div class="empty">
       <ol>
@@ -393,6 +414,7 @@ function deleteArea() {
   editing = null; pendingFile = null; current = null;
   drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
   document.querySelector("#dlCsv").disabled = true; document.querySelector("#dlGeo").disabled = true; document.querySelector("#dlCheck").disabled = true;
+  document.querySelector("#downloads").classList.add("off"); document.querySelector("#dlHint").textContent = "Available after Predict.";
   document.querySelector("#results").innerHTML = EMPTY_RESULTS;
   document.querySelector("#name").value = "";
   renderPolyList(); ready();
@@ -404,8 +426,12 @@ function ready() { $("#run").disabled = !(drawn.getLayers().length || pendingFil
 
 $("#load").onclick = () => $("#file").click();
 $("#name").addEventListener("input", renderPolyList);
-$("#file").onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
+$("#file").onchange = async e => { const f = e.target.files[0]; e.target.value = ""; if (f) await loadFile(f); };
+const dz = $("#load");
+dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("over"); });
+dz.addEventListener("dragleave", () => dz.classList.remove("over"));
+dz.addEventListener("drop", e => { e.preventDefault(); dz.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+async function loadFile(f) {
   const buf = new Uint8Array(await f.arrayBuffer());
   let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
   pendingFile = {name: f.name, b64: btoa(bin)}; editing = null;
@@ -418,8 +444,8 @@ $("#file").onchange = async e => {
     if (gj) { L.geoJSON(gj, {style}).eachLayer(l => drawn.addLayer(l)); map.fitBounds(drawn.getBounds(), {padding: [50, 50]}); }
   } catch {}
   $("#name").value = f.name.replace(/\.[^.]+$/, "").replace(/_\d{4}-\d{2}-\d{2}_\d+$/, "");
-  setStatus(`Loaded ${f.name}. Press Predict.`); ready(); renderPolyList(); e.target.value = "";
-};
+  setStatus(`Loaded ${f.name}. Press Predict.`); ready(); renderPolyList();
+}
 function kmlToGeoJSON(text) {
   const doc = new DOMParser().parseFromString(text, "text/xml"), polys = [];
   for (const p of doc.getElementsByTagNameNS("*", "Polygon")) {
@@ -683,6 +709,7 @@ function attrsTable(u, units, groups, wvar) {
 
 function show(j) {
   current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false; $("#dlCheck").disabled = false;
+  $("#downloads").classList.remove("off"); $("#dlHint").textContent = "For this prediction.";
   resultLayer.clearLayers(); plotLayer.clearLayers();
   const multi = j.units.length > 1;
   // Units are drawn over the site; the site outline stays on top for reference.

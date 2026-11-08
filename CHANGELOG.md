@@ -5,6 +5,10 @@
 - Removed the one-line description under the title in the sidebar.
 - The map page no longer mentions Occurd (load-file hint, how-to step and
   code comments). Species names still open LookLike.
+- **Separate upload and download areas.** Uploading is a dashed drop zone
+  (click or drag a KML, KMZ or GeoJSON onto it) above a full-width Predict
+  button. Downloads (plant checklist, species lists, units map) sit in their
+  own shaded panel, greyed out until a prediction is done.
 
 ## v0.19.0 (November 2026)
 
