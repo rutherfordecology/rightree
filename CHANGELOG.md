@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.9.0 (November 2026)
+
+- **Growth-form table.** `config/growth_forms.json` gives every native genus
+  in the Gisborne records (226) a growth form and usual habitat, set by hand.
+  Forms are canopy tree, small tree, shrub, tree fern, fern, graminoid, herb,
+  climber, epiphyte or aquatic. Habitat is forest, both, open, wetland or
+  coast. About 30 species entries override their genus, e.g. forest vs
+  pioneer Coprosma, and pōhutukawa as coastal. NZTCS has no growth form,
+  so this replaces the genus lists in `config/plot_stage_indicators.json`
+  (removed) for re-staging NVS plots. The same 16 plots move.
+- **Cleaner Open lists.** Observations that LCDB maps as open ground are set
+  aside if:
+  - they are within 50 m of bush or scrub (likely in a remnant LCDB didn't
+    map); or
+  - the plant is forest-only (forest ferns, epiphytes, canopy trees).
+
+  In Gisborne that sets aside 155 edge records and 59 forest-only records,
+  leaving 201. Open lists are now what colonises open ground. The coast test
+  gives mānuka, pōhuehue, koromiko, pōhutukawa, ake, tī kōuka, oioi and
+  tātaraheke. Inland, the Open list is now usually "not enough evidence",
+  which is honest: few people record natives in pasture.
+- `tag_records.py` adds `dist_woody_m`: distance (up to 200 m) from each
+  record to native forest, scrub, gorse or broom in LCDB at the record's
+  date.
+
 ## v0.8.0 (November 2026)
 
 - **NVS plots are staged by what they recorded**, not only by LCDB. LCDB maps

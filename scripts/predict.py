@@ -199,23 +199,41 @@ def stage_of(cover):
     return None
 
 
-MATURE, REGEN = list(STAGES)[0], list(STAGES)[1]
+MATURE, REGEN, OPEN = list(STAGES)
 
 
-def restage_plots(stage, visit_species):
+def load_growth_forms():
+    """(form, habitat) lookup by name: species entry first, then genus."""
+    gf = json.loads((ROOT / "config" / "growth_forms.json").read_text(encoding="utf-8"))
+
+    def lookup(name):
+        return gf["species"].get(" ".join(name.split()[:2])) or gf["genera"].get(name.split()[0])
+    return lookup
+
+
+CANOPY = {"canopy tree"}
+WOODY_FORMS = {"canopy tree", "small tree", "shrub", "tree fern"}
+MIN_CANOPY_GENERA, MIN_WOODY_GENERA = 3, 4
+EDGE_M = 50   # an open-mapped observation this close to bush or scrub isn't counted as open
+
+
+def restage_plots(stage, visit_species, gf):
     """LCDB's minimum mapping unit is 1 ha, so a plot in a forest remnant can
     sit in polygons mapped as pasture. Plots that LCDB calls open (or an
-    excluded cover) but that record several forest canopy genera are mature
+    excluded cover) but that record several canopy-tree genera are mature
     forest; with several woody genera, regenerating."""
-    ind = json.loads((ROOT / "config" / "plot_stage_indicators.json").read_text(encoding="utf-8"))
-    mature, woody = set(ind["mature_canopy"]), set(ind["mature_canopy"]) | set(ind["woody"])
     out, n = stage.copy(), 0
     for v, st in stage.items():
         if st in (MATURE, REGEN):
             continue
-        genera = {s.split()[0] for s in visit_species[v]}
-        new = (MATURE if len(genera & mature) >= ind["min_mature"]
-               else REGEN if len(genera & woody) >= ind["min_woody"] else st)
+        forms = {}
+        for s in visit_species[v]:
+            f = gf(s)
+            if f:
+                forms[s.split()[0]] = f[0]
+        canopy = sum(f in CANOPY for f in forms.values())
+        woody = sum(f in WOODY_FORMS for f in forms.values())
+        new = MATURE if canopy >= MIN_CANOPY_GENERA else REGEN if woody >= MIN_WOODY_GENERA else st
         if new != st:
             out[v], n = new, n + 1
     return out, n
@@ -329,10 +347,24 @@ def main():
                                       year=("year", "first"))
     visit_Z = rec_Z[visits["idx"].to_numpy()]
     visit_species = nvs.groupby("visit")["name"].agg(set)
-    visits["stage"], n_restaged = restage_plots(visits["stage"], visit_species)
+    gf = load_growth_forms()
+    visits["stage"], n_restaged = restage_plots(visits["stage"], visit_species, gf)
     print(f"Re-staged {n_restaged} NVS plots from what they recorded (LCDB said open or excluded cover)")
     # typical NN spread among plots, to judge how close a unit's analogues are
-    obs = rec[rec["source"] != "NVS"]
+    obs = rec[rec["source"] != "NVS"].copy()
+    # Open-ground observations: drop those at a bush edge (likely in an
+    # unmapped remnant) and forest-only plants (a lone record of a forest fern
+    # in "pasture" says nothing about what colonises open ground).
+    is_open = obs["stage"] == OPEN
+    edge = is_open & (obs["dist_woody_m"] <= EDGE_M)
+    habitat = obs["name"].map(lambda s: (gf(s) or (None, None))[1])
+    forest_only = is_open & ~edge & (habitat == "forest")
+    obs.loc[edge | forest_only, "stage"] = None
+    print(f"Open-ground observations: {int(edge.sum())} at a bush edge and {int(forest_only.sum())} "
+          f"forest-only plants set aside; {int((obs['stage'] == OPEN).sum())} kept")
+    no_form = sorted({s for s in rec["name"] if gf(s) is None})
+    if no_form:
+        print(f"No growth form for {len(no_form)} names: {', '.join(no_form[:10])}")
     nat_wl = rec["gdc_wl_status"].isin(NATURAL_WETLAND)
 
     rows_out, report = [], [f"# Rightree prediction: {site}", "",

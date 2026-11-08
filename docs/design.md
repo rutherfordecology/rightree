@@ -129,7 +129,7 @@ Records in or within 100 m of the site are dropped. On-site iNat records (cabbag
 
 ## Plot stages and unit splits (v0.8.0)
 
-Plot stage from LCDB alone put forest plots into "Open", because LCDB's roughly 1 ha minimum misses small remnants. Plots LCDB calls open or excluded are now re-staged from their recorded genera (`config/plot_stage_indicators.json`): 3 or more canopy genera means mature forest, and 4 or more woody genera means regenerating. Genus lists are a stopgap. Growth form isn't in NZTCS, so a proper fix needs a growth-form table (e.g. the NVS species attribute list). Observations can't be re-staged this way, because a single record says nothing about the stand.
+Plot stage from LCDB alone put forest plots into "Open", because LCDB's roughly 1 ha minimum misses small remnants. Plots LCDB calls open or excluded are now re-staged from their recorded genera, using growth forms in `config/growth_forms.json` (v0.9.0): 3 or more canopy-tree genera means mature forest, and 4 or more woody genera means regenerating. The table is hand-made at genus level with species overrides. If the NVS species attribute list (growth form) can be licensed, it should replace the hand table. Observations can't be re-staged, because a single record says nothing about the stand. Instead, open-mapped observations within 50 m of LCDB woody cover, and forest-only plants, are left out of the Open list (v0.9.0).
 
 Unit splits are kept only if every unit holds at least 10% of the cells and the closest pair of unit medians is at least 0.05 Gower apart. Below that, units pick nearly the same analogues and just repeat lists.
 

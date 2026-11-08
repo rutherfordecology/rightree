@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.8.0). First predictions run; native records are tagged with environment,
+Status: prototype (v0.9.0). First predictions run; native records are tagged with environment,
 land cover and wetlands. See
 [`docs/design.md`](docs/design.md).
 
@@ -60,7 +60,9 @@ Writes `report.md`, `species.csv` and `units.geojson` to
    mature forest; regenerating hardwoods, mānuka/kānuka and scrub; and open
    ground. That gives a succession sequence. NVS plots that LCDB maps as
    open but that recorded forest canopy or woody genera are moved to the
-   forest stages, because LCDB misses small remnants.
+   forest stages, because LCDB misses small remnants. Open-ground
+   observations within 50 m of bush, or of forest-only plants, are set aside.
+   Growth forms and habitats are in `config/growth_forms.json`.
 4. **Lists.** Plot share is the share of the closest NVS plots that recorded
    each species; plots list everything present, so this is the strongest
    evidence. Observation share is the same from iNaturalist and herbarium

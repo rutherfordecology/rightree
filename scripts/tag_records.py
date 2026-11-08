@@ -21,6 +21,9 @@ from rasterio.warp import transform
 from scipy.ndimage import distance_transform_edt
 
 LCDB_YEARS = [1996, 2001, 2008, 2012, 2018, 2023]
+WOODY = {"Indigenous Forest", "Broadleaved Indigenous Hardwoods", "Manuka and/or Kanuka",
+         "Matagouri or Grey Scrub", "Sub Alpine Shrubland", "Gorse and/or Broom", "Mixed Exotic Shrubland"}
+WOODY_MAX_M = 200   # dist_woody_m is blank beyond this
 
 
 def load_polys(path, fields):
@@ -49,7 +52,7 @@ def main():
 
     # LCDB
     fields = [f"Name_{yr}" for yr in LCDB_YEARS] + [f"Wetland_{str(yr)[2:]}" for yr in LCDB_YEARS]
-    tree, _, props = load_polys(env / "lcdb_v6.geojson", fields)
+    tree, geoms, props = load_polys(env / "lcdb_v6.geojson", fields)
     i = hit(tree, pts)
     yr = df["year"].fillna(1996).to_numpy()
     nearest = np.array(LCDB_YEARS)[np.abs(yr[:, None] - np.array(LCDB_YEARS)[None, :]).argmin(axis=1)]
@@ -57,6 +60,19 @@ def main():
     df["lcdb_at_record"] = [props.at[j, f"Name_{n}"] if j >= 0 else None for j, n in zip(i, nearest)]
     df["lcdb_2023"] = [props.at[j, "Name_2023"] if j >= 0 else None for j in i]
     df["lcdb_wetland_at_record"] = [props.at[j, f"Wetland_{str(n)[2:]}"] if j >= 0 else None for j, n in zip(i, nearest)]
+
+    # Distance to the nearest woody cover at the same LCDB date. A record mapped
+    # as pasture but a few metres from bush is usually in or at the edge of a
+    # remnant LCDB didn't map (1 ha minimum), so predict.py won't count it as
+    # open ground.
+    df["dist_woody_m"] = np.nan
+    for yr_ in LCDB_YEARS:
+        sel = np.flatnonzero(nearest == yr_)
+        if not len(sel):
+            continue
+        woody = geoms[props[f"Name_{yr_}"].isin(WOODY).to_numpy()]
+        (qi, _), d = shapely.STRtree(woody).query_nearest(pts[sel], max_distance=WOODY_MAX_M, return_distance=True)
+        df.loc[df.index[sel[qi]], "dist_woody_m"] = d
 
     # GDC wetlands
     tree, _, props = load_polys(env / "gdc_wetlands.geojson", ["wl_class", "wl_status", "confidence"])
