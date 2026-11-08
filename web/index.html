@@ -4,84 +4,114 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rightree</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 6 17h5l-4 6h7v6h4v-6h7l-4-6h5z' fill='%232e7d4f'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3 6 17h5l-4 6h7v6h4v-6h7l-4-6h5z' fill='%23263b27'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
+/* Colours, type and map controls follow Occurd's visual style. */
 :root {
-  --bg: #f6f7f4; --panel: #ffffff; --ink: #1d2a22; --muted: #5f6d64; --line: #dfe4dd;
-  --accent: #2e7d4f; --accent-ink: #ffffff; --soft: #eaf3ec; --warn: #9a5b00; --warn-soft: #fff4e0;
-  --bar: #2e7d4f; --bar2: #8fbf9f;
+  --slate: #263b27; --grey: #5F6B66; --ink: #000; --bg: #fff; --rule: #d5d9d7; --hover: #eef0ef;
+  --close: #263b27; --best: #a15c00; --best-soft: #fff4e3; --soft: #eef0ef; --threat: #a1261b;
+  --font: 'Inter Tight', system-ui, -apple-system, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #121714; --panel: #1a211d; --ink: #e4ebe6; --muted: #9aa8a0; --line: #2c3631;
-    --accent: #5cb57f; --accent-ink: #0d1510; --soft: #1f2d25; --warn: #e3a64a; --warn-soft: #2e2618;
-    --bar: #5cb57f; --bar2: #2f6b47;
+    --slate: #8fc79a; --grey: #a3ada8; --ink: #e9eeeb; --bg: #151a17; --rule: #2e3833; --hover: #1f2823;
+    --close: #8fc79a; --best: #e6a24a; --best-soft: #2c2417; --soft: #1f2823; --threat: #ef7f72;
   }
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
-  display: grid; grid-template-columns: 440px 1fr; }
-#side { display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--panel); min-height: 0; }
-header { padding: 14px 18px 10px; border-bottom: 1px solid var(--line); }
-header h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
-header h1 span { color: var(--accent); }
-header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
-#controls { padding: 12px 18px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
-.row { display: flex; gap: 8px; align-items: center; }
-input[type=text], select { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); display: grid; grid-template-columns: 460px 1fr; }
+#side { display: flex; flex-direction: column; border-right: 1px solid var(--rule); min-height: 0; }
+header { padding: 14px 18px 12px; background: var(--slate); color: #fff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) header { background: #263b27; } }
+header h1 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: .2px; }
+header p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+#controls { padding: 12px 18px; border-bottom: 1px solid var(--rule); display: grid; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+input[type=text], select { flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--rule); border-radius: 0;
   background: var(--bg); color: var(--ink); font: inherit; }
-button { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink);
-  font: inherit; cursor: pointer; white-space: nowrap; }
-button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-button:disabled { opacity: .5; cursor: default; }
-.hint { color: var(--muted); font-size: 12.5px; }
+button, .btn { padding: 7px 12px; border-radius: 0; border: 1px solid var(--slate); background: var(--bg); color: var(--ink);
+  font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-block; }
+button:hover, .btn:hover { background: var(--hover); }
+button.primary { background: #263b27; color: #fff; border-color: #263b27; font-weight: 600; }
+button:disabled { opacity: .4; cursor: default; }
+.hint { color: var(--grey); font-size: 12.5px; }
 #status { font-size: 13px; }
-#status.err { color: #c0392b; }
+#status.err { color: var(--threat); }
 #results { flex: 1; overflow-y: auto; padding: 4px 18px 24px; }
-.empty { color: var(--muted); padding: 20px 0; }
+.empty { color: var(--grey); padding: 10px 0; }
 .empty ol { padding-left: 18px; }
-.unit { border: 1px solid var(--line); border-radius: 8px; margin: 14px 0; overflow: hidden; }
+.unit { border: 1px solid var(--rule); margin: 14px 0; }
 .unit-head { padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
-.swatch { width: 14px; height: 14px; border-radius: 3px; flex: none; margin-top: 3px; }
+.unit-head:hover { background: var(--hover); }
+.swatch { width: 14px; height: 14px; flex: none; margin-top: 3px; }
 .unit-head h2 { margin: 0; font-size: 15px; }
-.unit-head .env { color: var(--muted); font-size: 12.5px; }
-.tabs { display: flex; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-x: auto; }
-.tab { flex: 1; padding: 7px 6px; border: 0; border-radius: 0; background: none; font-size: 12.5px; color: var(--muted);
-  border-bottom: 2px solid transparent; }
-.tab.on { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
-.tab .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
-.dot.close { background: var(--accent); } .dot.best { background: var(--warn); } .dot.none { background: var(--line); }
+.env { color: var(--grey); font-size: 12.5px; }
+.apart { font-size: 12.5px; margin-top: 3px; }
+details.attrs { border-top: 1px solid var(--rule); padding: 6px 12px; }
+details.attrs summary { cursor: pointer; font-size: 12.5px; font-weight: 600; }
+.tabs { display: flex; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); overflow-x: auto; }
+.tab { flex: 1; padding: 7px 6px; border: 0; background: none; font-size: 12.5px; color: var(--grey); border-bottom: 2px solid transparent; }
+.tab:hover { background: var(--hover); }
+.tab.on { color: var(--ink); border-bottom-color: var(--slate); font-weight: 600; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
+.dot.close { background: var(--close); } .dot.best { background: var(--best); } .dot.none { background: var(--rule); }
 .stage { padding: 10px 12px 12px; }
-.badge { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 10px; font-weight: 600; }
-.badge.close { background: var(--soft); color: var(--accent); }
-.badge.best { background: var(--warn-soft); color: var(--warn); }
-.evidence { color: var(--muted); font-size: 12.5px; margin: 6px 0; }
-.note { background: var(--warn-soft); color: var(--ink); border-radius: 6px; padding: 7px 9px; font-size: 12.5px; margin: 6px 0; }
+.badge { display: inline-block; font-size: 11.5px; padding: 1px 7px; font-weight: 600; }
+.badge.close { background: var(--soft); color: var(--close); }
+.badge.best { background: var(--best-soft); color: var(--best); }
+.evidence { color: var(--grey); font-size: 12.5px; margin: 6px 0; }
+.note { background: var(--best-soft); padding: 7px 9px; font-size: 12.5px; margin: 6px 0; }
 .note.plain { background: var(--soft); }
 table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
-th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11.5px; padding: 4px 4px; border-bottom: 1px solid var(--line); }
-td { padding: 4px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
-td.sci { font-style: italic; color: var(--muted); font-size: 12px; }
-td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-weight: 600; color: var(--grey); font-size: 11.5px; padding: 4px; border-bottom: 1px solid var(--rule); }
+td { padding: 4px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.grp { font-weight: 600; font-size: 11.5px; color: var(--grey); text-transform: uppercase; letter-spacing: .4px; padding-top: 8px; }
+tr.diff td { background: var(--best-soft); }
+a.sp { color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--grey); }
+a.sp:hover { color: var(--slate); border-bottom-color: var(--slate); }
+.sci { font-style: italic; color: var(--grey); font-size: 12px; }
 .barcell { width: 70px; }
-.bar { height: 8px; border-radius: 4px; background: var(--line); position: relative; margin-top: 5px; }
-.bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--bar); }
-.bar i.obs { background: var(--bar2); }
-.threat { font-size: 11px; color: #c0392b; font-weight: 600; }
-.more { margin-top: 6px; font-size: 12.5px; }
-.foot { color: var(--muted); font-size: 12px; margin-top: 14px; }
+.bar { height: 8px; background: var(--rule); position: relative; margin-top: 5px; }
+.bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--slate); }
+.bar i.obs { opacity: .55; }
+.threat { font-size: 11px; color: var(--threat); font-weight: 600; }
+.stage-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.stage-actions button, .stage-actions .btn { font-size: 12.5px; padding: 5px 10px; }
+.foot { color: var(--grey); font-size: 12px; margin-top: 14px; }
 .foot summary { cursor: pointer; }
+#mapwrap { position: relative; }
 #map { height: 100%; }
-#busy { position: absolute; inset: 0; background: rgba(0,0,0,.25); display: none; align-items: center; justify-content: center; z-index: 1000; }
-#busy div { background: var(--panel); color: var(--ink); padding: 14px 18px; border-radius: 8px; box-shadow: 0 4px 18px rgba(0,0,0,.2); }
-.leaflet-container { font: inherit; }
+#busy { position: absolute; inset: 0; background: rgba(0,0,0,.25); display: none; align-items: center; justify-content: center; z-index: 1300; }
+#busy div { background: var(--bg); color: var(--ink); padding: 14px 18px; border: 1px solid var(--slate); }
+
+/* Occurd's Leaflet / Leaflet.draw overrides */
+.leaflet-container { font-family: var(--font); }
+.leaflet-bar, .leaflet-touch .leaflet-bar, .leaflet-control-layers, .leaflet-touch .leaflet-control-layers {
+  border-radius: 0 !important; box-shadow: none !important; border: 1px solid #263b27 !important; }
+.leaflet-bar a, .leaflet-touch .leaflet-bar a { border-radius: 0 !important; color: #000; border-bottom-color: #d5d9d7; }
+.leaflet-bar a:hover { background: #eef0ef; }
+.leaflet-draw-actions a { border-radius: 0 !important; background: #263b27 !important; }
+.leaflet-draw-tooltip { border-radius: 0; background: #000; border: none; }
+.leaflet-draw-tooltip:before { border-right-color: #000; }
+.leaflet-error-draw-tooltip { display: none !important; }
+.draw-dist-label { background: transparent !important; border: none !important; box-shadow: none; overflow: visible !important; pointer-events: none; }
+.draw-dist-label span { display: inline-block; background: #000; color: #fff; font-size: 13px; font-weight: 600; padding: 3px 9px;
+  white-space: nowrap; font-family: var(--font); transform: translate(-50%,-50%); pointer-events: none; }
+#drawActionBar { display: none; position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 1200; gap: 8px; white-space: nowrap; }
+#drawActionBar button { background: #263b27; color: #fff; border: none; padding: 11px 22px; font-size: 14px; font-weight: 500; touch-action: none; }
+#drawActionBar #cancelDrawBtn { background: #fff; color: #263b27; border: 1.5px solid #263b27; }
+#drawActionBar button:disabled { opacity: .35; pointer-events: none; }
+.unit-label { background: #fff; border: 1px solid #263b27; border-radius: 0; box-shadow: none; font-weight: 600; font-size: 12px; padding: 1px 6px; color: #000; }
+.unit-label:before { display: none; }
+
 @media (max-width: 800px) {
   body { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; }
-  #side { order: 2; border-right: 0; border-top: 1px solid var(--line); }
+  #side { order: 2; border-right: 0; border-top: 1px solid var(--rule); }
   #mapwrap { order: 1; }
 }
 </style>
@@ -89,7 +119,7 @@ td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-n
 <body>
 <aside id="side">
   <header>
-    <h1>Right<span>ree</span></h1>
+    <h1>Rightree</h1>
     <p>Native plants expected at a site, from where they grow in similar places nearby.</p>
   </header>
   <div id="controls">
@@ -98,39 +128,47 @@ td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-n
       <select id="region" title="Region data"></select>
     </div>
     <div class="row">
-      <button id="draw" title="Draw the site boundary on the map">Draw area</button>
       <button id="load" title="Load a KML, KMZ or GeoJSON, e.g. exported from Occurd">Load file…</button>
       <input id="file" type="file" accept=".kml,.kmz,.geojson,.json" hidden>
       <button id="run" class="primary" disabled>Predict</button>
+      <span style="flex:1"></span>
+      <button id="dlCsv" disabled title="Species lists for every unit and stage">Download species CSV</button>
+      <button id="dlGeo" disabled title="Units with their model inputs, as GeoJSON">Units GeoJSON</button>
     </div>
-    <div class="row">
-      <select id="runs"><option value="">Previous runs…</option></select>
-      <button id="csv" disabled title="Download the species list as CSV">CSV</button>
-    </div>
-    <div id="status" class="hint">Draw an area or load a file to start.</div>
+    <div id="status" class="hint">Draw an area with the polygon or rectangle tool on the map, or load a file.</div>
   </div>
   <div id="results">
     <div class="empty">
       <ol>
-        <li>Draw your site on the map, or load a KML exported from Occurd.</li>
+        <li>Draw your site with the tools at the top left of the map, or load a KML exported from Occurd.</li>
         <li>Press <b>Predict</b>. It takes about 10 seconds.</li>
-        <li>Each part of the site gets lists for three stages: <b>mature forest</b>, <b>regenerating</b>
-          (kānuka, scrub, young hardwoods) and <b>open ground</b>, plus a <b>wetland</b> list where there is one.</li>
+        <li>If the site holds distinct habitats it is split into units, mapped and described. Each unit gets lists for
+          <b>mature forest</b>, <b>regenerating</b> (kānuka, scrub, young hardwoods) and <b>open ground</b>, plus a
+          <b>wetland</b> list where there is one.</li>
       </ol>
       <p><span class="badge close">Close matches</span> are good evidence.
         <span class="badge best">Best available</span> means no close matches, so treat the list as a lead to check.</p>
+      <p>Species names open in LookLike.</p>
     </div>
   </div>
 </aside>
-<div id="mapwrap" style="position:relative">
+<div id="mapwrap">
   <div id="map"></div>
+  <div id="drawActionBar">
+    <button id="finishDrawBtn">&#x2713; Finish</button>
+    <button id="undoPointBtn">&#x21A9; Undo point</button>
+    <button id="cancelDrawBtn">&#x2715; Cancel</button>
+  </div>
   <div id="busy"><div>Predicting… about 10 seconds</div></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
-const UNIT_COLOURS = ["#2e7d4f", "#c0662b", "#3b6fb6", "#8e44ad"];
+const LOOKLIKE = "https://occurd.rutherfordecology.co.nz/looklike/";
+const AREA_COLOUR = "#C8611A";            // Occurd's first drawn-area colour
+const DRAW_STYLE = {color: "#FF8C00", fillColor: "#FF8C00", fillOpacity: 0.1, weight: 3};
+const UNIT_COLOURS = ["#2c5f8a", "#8a2c2c", "#5a2a7a", "#1a5a6a"];   // Occurd's polygon palette
 const STAGE_SHORT = {"Mature forest": "Mature forest", "Regenerating (hardwoods, mānuka/kānuka, scrub)": "Regenerating",
   "Open (grassland, riverbed, coast)": "Open ground", "Wetland": "Wetland"};
 const STAGE_HELP = {
@@ -139,49 +177,161 @@ const STAGE_HELP = {
   "Open ground": "Natives that grow in grassland, riverbeds or on the coast at similar sites, away from bush edges.",
   "Wetland": "Species recorded inside natural wetlands (GDC mapping) at similar sites."
 };
+// Model inputs: label, unit, decimals, and a plain-language note.
+const VARS = {
+  temp_meanAnn: ["Mean annual temperature", "°C", 1],
+  temp_minColdMonth: ["Coldest-month minimum", "°C", 1, "frost risk"],
+  precip_ann: ["Annual rainfall", "mm", 0],
+  waterBalance_annDeficit: ["Annual water deficit", "mm", 0, "summer drought"],
+  vpd_oct: ["October vapour pressure deficit", "kPa", 2, "spring dryness of the air"],
+  solRad_meanAnn: ["Mean solar radiation", "MJ/m²/day", 1],
+  wind_meanAnn: ["Mean wind", "", 1, "relative exposure"],
+  slope_deg: ["Slope", "°", 0],
+  aspect_northness: ["Aspect: northness", "", 2, "−1 south-facing, +1 north-facing"],
+  topo_wetness: ["Topographic wetness", "", 1, "higher where water collects"],
+  topo_position: ["Topographic position", "", 1, "negative in gullies, positive on ridges"],
+  distance_coast: ["Distance to coast", "km", 1],
+  soil_drainage: ["Soil drainage", "class", 0, "1 very poor … 5 well drained"],
+  soil_pH: ["Soil pH", "", 1],
+  soil_age: ["Soil age", "class", 0, "1 youngest (recent alluvium)"],
+  soil_particleSize: ["Soil particle size", "class", 0, "class 1–5"],
+  soil_acidP: ["Acid-soluble phosphorus", "class", 0, "class 1–4"],
+  soil_calcium: ["Exchangeable calcium", "class", 0, "class 1–4"],
+  soil_induration: ["Induration", "class", 0, "class 1–4, how hard the parent rock is"],
+  distance_wetland: ["Distance to natural wetland", "m", 0]
+};
+const GROUP_NAMES = {climate: "Climate", terrain: "Terrain", soil: "Soil"};
 const THREAT = c => c && !/Not Threatened|Introduced|Data Deficient|Not Assessed|^nan$/i.test(c);
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const pct = v => v > 0 ? Math.round(v * 100) + "%" : "";
+const ll = name => LOOKLIKE + "?s=" + encodeURIComponent(name);
+function fmtVal(v, k) {
+  if (v == null) return "—";
+  const [, unit, dp] = VARS[k] || ["", "", 1];
+  if (k === "distance_coast") v = v / 1000;
+  return (+v).toLocaleString(undefined, {minimumFractionDigits: dp, maximumFractionDigits: dp}) + (unit && unit !== "class" ? " " + unit : "");
+}
 
-const map = L.map("map", {zoomControl: true}).setView([-38.4, 177.9], 9);
-const topo = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {maxZoom: 19, attribution: "© OpenStreetMap contributors"});
-const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-  {maxZoom: 19, attribution: "Imagery © Esri, Maxar, Earthstar Geographics"});
-sat.addTo(map);
-L.control.layers({"Imagery": sat, "Street map": topo}, null, {position: "topright"}).addTo(map);
+// ── Map: Occurd's basemaps and draw tools ──────────────────────────────────
+const map = L.map("map").setView([-38.4, 177.9], 9);
+const tile = {maxZoom: 19, keepBuffer: 4};
+const osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {...tile, attribution: "&copy; OpenStreetMap contributors"});
+const sat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {...tile, attribution: "&copy; Esri, Maxar, Earthstar Geographics"});
+const grey = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {...tile, attribution: "&copy; OpenStreetMap contributors &copy; CARTO"});
+const topo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {...tile, maxZoom: 17, attribution: "&copy; OpenTopoMap (CC-BY-SA)"});
+osm.addTo(map);
+L.control.layers({"Map": osm, "Satellite": sat, "Greyscale": grey, "Topo": topo}, {}, {position: "topleft"}).addTo(map);
 
-const drawn = new L.FeatureGroup().addTo(map);
+const drawn = L.featureGroup().addTo(map);
 const resultLayer = L.layerGroup().addTo(map);
 const plotLayer = L.layerGroup().addTo(map);
-let regionLayer, pendingFile = null, current = null;
-const drawer = new L.Draw.Polygon(map, {shapeOptions: {color: "#ffd84d", weight: 2, fillOpacity: .1}, showArea: true});
+let pendingFile = null, current = null, editing = null;
+
+L.drawLocal.draw.handlers.polygon.tooltip.start = "Click to start drawing.";
+L.drawLocal.draw.handlers.polygon.tooltip.cont = "Click to continue drawing.";
+L.drawLocal.draw.handlers.polygon.tooltip.end = "Double-click to close drawing.";
+L.drawLocal.draw.handlers.rectangle.tooltip.start = "Click and drag to draw a rectangle.";
+L.drawLocal.draw.toolbar.buttons.polygon = "Draw the site";
+L.drawLocal.draw.toolbar.buttons.rectangle = "Draw a rectangle";
+const drawControl = new L.Control.Draw({
+  edit: {featureGroup: drawn, edit: false, remove: false},
+  draw: {polygon: {shapeOptions: DRAW_STYLE, showArea: false, allowIntersection: true},
+         rectangle: {shapeOptions: DRAW_STYLE, showArea: false},
+         polyline: false, circle: false, circlemarker: false, marker: false}
+}).addTo(map);
+
+// Finish / Undo / Cancel bar and segment lengths while drawing (as in Occurd)
+const bar = $("#drawActionBar"), finishBtn = $("#finishDrawBtn");
+let handler = null, segLabels = [], moveLabel = null, lastVertex = null, drawingPoly = false;
+const fmtDist = m => m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";
+const distLabel = (at, text, moving) => L.marker(at, {interactive: false, keyboard: false,
+  icon: L.divIcon({className: "draw-dist-label" + (moving ? " draw-dist-moving" : ""), html: "<span>" + text + "</span>", iconSize: [0, 0]})}).addTo(map);
+function clearLabels() { segLabels.forEach(l => map.removeLayer(l)); segLabels = []; if (moveLabel) map.removeLayer(moveLabel); moveLabel = null; lastVertex = null; drawingPoly = false; }
+map.on(L.Draw.Event.DRAWSTART, e => {
+  finishEdit();
+  map.doubleClickZoom.disable();
+  if (e.layerType === "rectangle") { handler = null; return; }
+  handler = e.handler || drawControl._toolbars.draw._modes.polygon.handler;
+  bar.style.display = "flex"; finishBtn.disabled = true; clearLabels(); drawingPoly = true;
+});
+map.on(L.Draw.Event.DRAWSTOP, () => { bar.style.display = "none"; handler = null; clearLabels(); map.doubleClickZoom.enable(); });
+map.on("draw:drawvertex", e => {
+  const v = e.layers.getLayers().map(m => m.getLatLng());
+  if (v.length >= 2) { const a = v[v.length - 2], b = v[v.length - 1];
+    segLabels.push(distLabel(L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2), fmtDist(a.distanceTo(b)))); }
+  lastVertex = v[v.length - 1] || null; finishBtn.disabled = v.length < 3;
+});
+map.on("mousemove", e => {
+  if (!drawingPoly || !lastVertex) return;
+  const mid = L.latLng((lastVertex.lat + e.latlng.lat) / 2, (lastVertex.lng + e.latlng.lng) / 2), t = fmtDist(lastVertex.distanceTo(e.latlng));
+  if (!moveLabel) moveLabel = distLabel(mid, t, true);
+  else { moveLabel.setLatLng(mid); moveLabel.setIcon(L.divIcon({className: "draw-dist-label draw-dist-moving", html: "<span>" + t + "</span>", iconSize: [0, 0]})); }
+});
+const guard = fn => { let last = 0; return e => { e.preventDefault(); e.stopPropagation(); const n = Date.now(); if (n - last < 400) return; last = n; fn(); }; };
+const onFinish = guard(() => { if (handler && handler._markers && handler._markers.length >= 3) handler.completeShape(); });
+const onUndo = guard(() => handler && handler.deleteLastVertex && handler.deleteLastVertex());
+const onCancel = guard(() => handler && handler.disable && handler.disable());
+for (const [id, fn] of [["finishDrawBtn", onFinish], ["undoPointBtn", onUndo], ["cancelDrawBtn", onCancel]])
+  for (const ev of ["pointerdown", "click"]) $("#" + id).addEventListener(ev, fn);
+
+// A new area is dashed and editable (drag corners), then solid once used — Occurd's convention.
+map.on(L.Draw.Event.CREATED, e => {
+  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers(); pendingFile = null;
+  editing = e.layer;
+  editing.setStyle({color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.08, weight: 2, dashArray: "7,5"});
+  drawn.addLayer(editing);
+  if (editing.editing) editing.editing.enable();
+  map.fitBounds(drawn.getBounds(), {padding: [50, 50]});
+  ready(); areaStatus();
+  editing.on("edit", areaStatus);
+});
+function finishEdit() {
+  if (!editing) return;
+  if (editing.editing) editing.editing.disable();
+  editing.setStyle({color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.1, weight: 2, dashArray: null});
+  editing = null;
+}
+function areaStatus() {
+  const l = drawn.getLayers()[0]; if (!l) return;
+  const ha = L.GeometryUtil.geodesicArea(l.getLatLngs()[0]) / 1e4;
+  setStatus(`Area: ${ha < 10 ? ha.toFixed(1) : Math.round(ha).toLocaleString()} ha. Drag the corners to adjust, then press Predict.`);
+}
 
 function setStatus(msg, err) { const s = $("#status"); s.textContent = msg; s.className = err ? "err" : "hint"; }
 function ready() { $("#run").disabled = !(drawn.getLayers().length || pendingFile); }
 
-$("#draw").onclick = () => { drawer.enable(); setStatus("Click points on the map; click the first point to finish."); };
-map.on(L.Draw.Event.CREATED, e => {
-  drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers(); pendingFile = null;
-  drawn.addLayer(e.layer); ready();
-  const ha = L.GeometryUtil.geodesicArea(e.layer.getLatLngs()[0]) / 1e4;
-  setStatus(`Area drawn: ${ha < 10 ? ha.toFixed(1) : Math.round(ha).toLocaleString()} ha. Press Predict.`);
-});
 $("#load").onclick = () => $("#file").click();
 $("#file").onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
   const buf = new Uint8Array(await f.arrayBuffer());
   let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
-  pendingFile = {name: f.name, b64: btoa(bin)};
+  pendingFile = {name: f.name, b64: btoa(bin)}; editing = null;
   drawn.clearLayers(); resultLayer.clearLayers(); plotLayer.clearLayers();
-  if (/\.(geo)?json$/i.test(f.name)) { try { const g = L.geoJSON(JSON.parse(new TextDecoder().decode(buf)), {style: {color: "#ffd84d", weight: 2, fillOpacity: .1}}); g.eachLayer(l => drawn.addLayer(l)); map.fitBounds(drawn.getBounds()); } catch {} }
+  const style = {color: AREA_COLOUR, fillColor: AREA_COLOUR, fillOpacity: 0.1, weight: 2};
+  try {
+    let gj = null;
+    if (/\.(geo)?json$/i.test(f.name)) gj = JSON.parse(new TextDecoder().decode(buf));
+    else if (/\.kml$/i.test(f.name)) gj = kmlToGeoJSON(new TextDecoder().decode(buf));
+    if (gj) { L.geoJSON(gj, {style}).eachLayer(l => drawn.addLayer(l)); map.fitBounds(drawn.getBounds(), {padding: [50, 50]}); }
+  } catch {}
   $("#name").value = f.name.replace(/\.[^.]+$/, "").replace(/_\d{4}-\d{2}-\d{2}_\d+$/, "");
   setStatus(`Loaded ${f.name}. Press Predict.`); ready(); e.target.value = "";
 };
+function kmlToGeoJSON(text) {
+  const doc = new DOMParser().parseFromString(text, "text/xml"), polys = [];
+  for (const p of doc.getElementsByTagNameNS("*", "Polygon")) {
+    const ring = el => el ? el.textContent.trim().split(/\s+/).map(c => c.split(",").slice(0, 2).map(Number)) : null;
+    const outer = ring(p.getElementsByTagNameNS("*", "outerBoundaryIs")[0]?.getElementsByTagNameNS("*", "coordinates")[0]);
+    const holes = [...p.getElementsByTagNameNS("*", "innerBoundaryIs")].map(i => ring(i.getElementsByTagNameNS("*", "coordinates")[0]));
+    if (outer) polys.push([outer, ...holes]);
+  }
+  return {type: "Feature", properties: {}, geometry: {type: "MultiPolygon", coordinates: polys}};
+}
 
 $("#run").onclick = async () => {
+  finishEdit();
   const body = {name: $("#name").value, region: $("#region").value};
   if (pendingFile) Object.assign(body, {file_name: pendingFile.name, file_b64: pendingFile.b64});
   else body.geojson = drawn.toGeoJSON();
@@ -190,47 +340,102 @@ $("#run").onclick = async () => {
     const r = await fetch("/api/predict", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || "Prediction failed");
-    show(j); loadRuns(j.id); setStatus("Done.");
+    show(j); setStatus(`Done: ${j.units.length > 1 ? j.units.length + " units" : "one unit"}.`);
   } catch (err) { setStatus(err.message, true); }
   finally { $("#busy").style.display = "none"; ready(); }
 };
 
-$("#runs").onchange = async e => {
-  if (!e.target.value) return;
-  const r = await fetch("/api/runs/" + e.target.value); const j = await r.json();
-  if (r.ok) { drawn.clearLayers(); pendingFile = null; show(j); ready(); setStatus("Showing " + e.target.value); }
+// ── Downloads ────────────────────────────────────────────────────────────
+function save(text, name, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click();
+}
+$("#dlCsv").onclick = () => {
+  const cols = ["unit", "stage", "tier", "common_name", "species", "plot_freq", "n_plots", "obs_share", "n_obs", "category", "bioStatus"];
+  const cell = v => { v = v ?? ""; return /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v; };
+  save("﻿" + [cols.join(",")].concat(current.species.map(s => cols.map(c => cell(s[c])).join(","))).join("\n"),
+       `rightree_${current.id}_species.csv`, "text/csv");
+};
+$("#dlGeo").onclick = () => {
+  const fc = JSON.parse(JSON.stringify(current.units_geojson));
+  for (const f of fc.features) {
+    const u = current.units.find(x => x.unit === f.properties.unit);
+    if (u) Object.assign(f.properties, {area_ha: u.ha}, Object.fromEntries(Object.entries(u.attrs)));
+  }
+  save(JSON.stringify(fc), `rightree_${current.id}_units.geojson`, "application/geo+json");
 };
 
-$("#csv").onclick = () => {
-  if (!current) return;
-  const cols = ["unit", "stage", "tier", "common_name", "species", "plot_freq", "n_plots", "obs_share", "n_obs", "category", "bioStatus"];
-  const lines = [cols.join(",")].concat(current.species.map(s => cols.map(c => {
-    const v = s[c] ?? ""; return /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v; }).join(",")));
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\n")], {type: "text/csv"}));
-  a.download = `rightree_${current.id}.csv`; a.click();
-};
+// ── Results ──────────────────────────────────────────────────────────────
+// What sets each unit apart: the inputs where it sits furthest from the
+// site's other units on the regional 0-1 scale the model uses.
+function apart(u, units) {
+  if (units.length < 2) return [];
+  return Object.keys(u.scaled).map(k => {
+    const others = units.filter(x => x !== u).map(x => x.scaled[k]).filter(v => v != null);
+    if (u.scaled[k] == null || !others.length) return null;
+    // Only where this unit is above (or below) every other unit
+    const up = u.scaled[k] - Math.max(...others), down = u.scaled[k] - Math.min(...others);
+    return {k, d: up > 0 ? up : down < 0 ? down : 0};
+  }).filter(x => x && Math.abs(x.d) >= 0.05).sort((a, b) => Math.abs(b.d) - Math.abs(a.d)).slice(0, 3);
+}
+function apartText(u, units) {
+  return apart(u, units).map(({k, d}) => {
+    const lbl = VARS[k][0].replace(/^Aspect: /, "").toLowerCase();
+    const others = units.filter(x => x !== u).map(x => fmtVal(x.attrs[k], k)).join(", ");
+    return `${d > 0 ? "higher" : "lower"} ${lbl} (${fmtVal(u.attrs[k], k)} vs ${others})`;
+  }).join("; ");
+}
+function attrsTable(u, units, groups, wvar) {
+  const multi = units.length > 1;
+  const diffKeys = new Set(multi ? units.flatMap(x => apart(x, units).map(a => a.k)) : []);
+  let h = `<table><thead><tr><th>Input</th>${multi ? units.map(x => `<th class="num">Unit ${x.unit}</th>`).join("") : `<th class="num">Value</th>`}</tr></thead><tbody>`;
+  const rows = Object.entries(groups).map(([g, ks]) => [GROUP_NAMES[g] || g, ks]).concat([["Wetland", [wvar]]]);
+  for (const [g, ks] of rows) {
+    h += `<tr><td class="grp" colspan="${multi ? units.length + 1 : 2}">${g}</td></tr>`;
+    for (const k of ks) {
+      const [label, , , note] = VARS[k] || [k];
+      h += `<tr class="${diffKeys.has(k) ? "diff" : ""}"><td>${esc(label)}${note ? `<div class="hint">${esc(note)}</div>` : ""}</td>` +
+        (multi ? units.map(x => `<td class="num">${fmtVal(x.attrs[k], k)}</td>`).join("") : `<td class="num">${fmtVal(u.attrs[k], k)}</td>`) + `</tr>`;
+    }
+  }
+  return h + `</tbody></table><p class="hint">Medians over the unit's 100 m cells. Climate, terrain and soil count equally;
+    distance to wetland adds half a group.${multi ? " Shaded rows are what separates the units." : ""}</p>`;
+}
 
 function show(j) {
-  current = j; $("#csv").disabled = false;
+  current = j; $("#dlCsv").disabled = false; $("#dlGeo").disabled = false;
   resultLayer.clearLayers(); plotLayer.clearLayers();
-  const ug = L.geoJSON(j.units_geojson, {style: f => ({color: UNIT_COLOURS[(f.properties.unit - 1) % 4], weight: 1.5, fillOpacity: .35})})
-    .bindTooltip(l => "Unit " + l.feature.properties.unit).addTo(resultLayer);
+  const multi = j.units.length > 1;
+  // Units are drawn over the site; the site outline stays on top for reference.
+  const ug = L.geoJSON(j.units_geojson, {style: f => multi
+      ? {color: UNIT_COLOURS[(f.properties.unit - 1) % 4], fillColor: UNIT_COLOURS[(f.properties.unit - 1) % 4], weight: 1, fillOpacity: .45}
+      : {stroke: false, fill: false}}).addTo(resultLayer);
+  if (multi) {
+    const seen = new Set();
+    ug.eachLayer(l => { const u = l.feature.properties.unit; if (seen.has(u)) return;
+      let big = null, area = 0;
+      ug.eachLayer(m => { if (m.feature.properties.unit !== u) return; const b = m.getBounds(); const a = (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()); if (a > area) { area = a; big = m; } });
+      seen.add(u); L.tooltip({permanent: true, direction: "center", className: "unit-label"}).setLatLng(big.getBounds().getCenter()).setContent("Unit " + u).addTo(resultLayer); });
+  }
+  if (!drawn.getLayers().length && ug.getLayers().length) L.geoJSON(j.units_geojson, {style: {color: AREA_COLOUR, weight: 2, fillOpacity: .1, fillColor: AREA_COLOUR}}).eachLayer(l => drawn.addLayer(l));
+  drawn.bringToFront();
   if (ug.getLayers().length) map.fitBounds(ug.getBounds(), {padding: [40, 40], maxZoom: 16});
 
-  const multi = j.units.length > 1;
-  let html = `<p class="evidence">${j.units.length > 1 ? `The site splits into ${j.units.length} parts that differ in climate, terrain or soil.` : "The site is treated as one unit."}
+  let html = `<p class="evidence">${multi ? `The site holds ${j.units.length} distinct habitats, mapped as units. Each gets its own lists.` : "The site is one habitat, so it is treated as one unit."}
     ${j.n_on_site ? `${j.n_on_site} records on or within ${j.on_site_buffer_m} m of the site were left out, so existing plantings don't feed the list.` : ""}</p>`;
   for (const u of j.units) {
     const stages = j.stages.filter(s => s.unit === u.unit);
     const covers = Object.entries(u.covers).map(([k, v]) => `${esc(k)} ${Math.round(v * 100)}%`).join(", ");
+    const at = apartText(u, j.units);
     html += `<section class="unit" data-unit="${u.unit}">
-      <div class="unit-head"><span class="swatch" style="background:${UNIT_COLOURS[(u.unit - 1) % 4]}"></span>
+      <div class="unit-head" title="Zoom to this unit">${multi ? `<span class="swatch" style="background:${UNIT_COLOURS[(u.unit - 1) % 4]}"></span>` : ""}
         <div><h2>${multi ? `Unit ${u.unit} · ` : ""}${u.ha.toLocaleString()} ha</h2>
-        <div class="env">${u.temp} °C mean · ${u.rain.toLocaleString()} mm rain · slope ${u.slope}° · ${u.coast_km} km from coast${u.wetland ? " · natural wetland" : ""}<br>Now: ${covers}</div></div></div>
+        <div class="env">${u.temp} °C mean · ${u.rain.toLocaleString()} mm rain · slope ${u.slope}° · ${u.coast_km} km from coast${u.wetland ? " · natural wetland" : ""}<br>Now: ${covers}</div>
+        ${at ? `<div class="apart"><b>Sets it apart:</b> ${at}</div>` : ""}</div></div>
+      <details class="attrs"><summary>Model inputs${multi ? " for all units" : ""}</summary>${attrsTable(u, j.units, j.groups, j.wetland_var)}</details>
       <div class="tabs">${stages.map((s, i) => {
         const cls = !s.enough ? "none" : s.tier === "close" ? "close" : "best";
-        return `<button class="tab${i === firstGood(stages) ? " on" : ""}" data-i="${i}"><span class="dot ${cls}"></span>${STAGE_SHORT[s.stage] || s.stage}</button>`; }).join("")}</div>
+        return `<button class="tab" data-i="${i}"><span class="dot ${cls}"></span>${STAGE_SHORT[s.stage] || s.stage}</button>`; }).join("")}</div>
       <div class="stage"></div></section>`;
   }
   html += `<details class="foot"><summary>How to read this</summary>
@@ -243,9 +448,9 @@ function show(j) {
   document.querySelectorAll(".unit").forEach(sec => {
     const unit = +sec.dataset.unit, stages = j.stages.filter(s => s.unit === unit);
     const render = i => { sec.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", +t.dataset.i === i));
-      sec.querySelector(".stage").innerHTML = stageHtml(stages[i], j); drawPlots(stages[i]); bindMore(sec, stages[i], j); };
+      sec.querySelector(".stage").innerHTML = stageHtml(stages[i], j); drawPlots(stages[i]); bindStage(sec, stages[i], j); };
     sec.querySelectorAll(".tab").forEach(t => t.onclick = () => render(+t.dataset.i));
-    sec.querySelector(".unit-head").onclick = () => ug.eachLayer(l => { if (l.feature.properties.unit === unit) map.fitBounds(l.getBounds(), {maxZoom: 16}); });
+    sec.querySelector(".unit-head").onclick = () => { const b = L.latLngBounds([]); ug.eachLayer(l => { if (l.feature.properties.unit === unit) b.extend(l.getBounds()); }); if (b.isValid()) map.fitBounds(b, {maxZoom: 16}); };
     render(firstGood(stages));
   });
 }
@@ -259,44 +464,41 @@ function stageHtml(s, j, all) {
   h += `<div class="evidence">Evidence: ${s.n_plots} plots and ${s.n_obs} records within ${s.limit}${near ? ` (${near})` : ""}.</div>`;
   if (!s.enough) return h + `<div class="note">Not enough similar sites for a list, even allowing weaker matches.</div>`;
   if (s.tier !== "close") h += `<div class="note">No close matches. These are the nearest sites that still have a similar climate and distance to the coast.
-    Treat as a lead to check, not a prediction.${s.plots_used.length ? " Plots used are shown on the map." : ""}</div>`;
+    Treat as a lead to check, not a prediction.${s.plots_used.length ? " The plots used are the orange dots on the map." : ""}</div>`;
   if (s.obs_only && s.stage !== "Wetland") h += `<div class="note plain">Too few survey plots, so this list is from records only. It shows what people have recorded, not what is absent.</div>`;
   const rows = j.species.filter(r => r.unit === s.unit && r.stage === s.stage);
   const n = all ? rows.length : Math.min(25, rows.length);
   const usePlots = rows.some(r => r.plot_freq > 0);
-  h += `<table><thead><tr><th>Species</th><th class="num">${usePlots ? "% of plots" : "% of records"}</th><th></th></tr></thead><tbody>`;
+  const max = usePlots ? 1 : Math.max(...rows.map(x => x.obs_share), 0);
+  h += `<table><thead><tr><th>Species <span class="hint">(opens in LookLike)</span></th><th class="num">${usePlots ? "% of plots" : "% of records"}</th><th></th></tr></thead><tbody>`;
   for (const r of rows.slice(0, n)) {
-    const v = usePlots ? r.plot_freq : r.obs_share, max = usePlots ? 1 : Math.max(...rows.map(x => x.obs_share));
-    h += `<tr><td>${esc(r.common_name || "")}${THREAT(r.category) ? ` <span class="threat" title="NZTCS">${esc(r.category)}</span>` : ""}
-      <div class="sci" style="font-style:italic;color:var(--muted);font-size:12px">${esc(r.species)}</div></td>
+    const v = usePlots ? r.plot_freq : r.obs_share;
+    h += `<tr><td><a class="sp" href="${ll(r.species)}" target="_blank" rel="noopener">${esc(r.common_name || r.species)}</a>
+      ${THREAT(r.category) ? ` <span class="threat" title="NZTCS">${esc(r.category)}</span>` : ""}
+      ${r.common_name ? `<div class="sci">${esc(r.species)}</div>` : ""}</td>
       <td class="num">${pct(v) || (usePlots && r.obs_share ? `<span class="hint">${pct(r.obs_share)} rec.</span>` : "")}</td>
       <td class="barcell"><div class="bar"><i class="${usePlots ? "" : "obs"}" style="width:${Math.round(100 * v / (max || 1))}%"></i></div></td></tr>`;
   }
-  h += `</tbody></table>`;
+  h += `</tbody></table><div class="stage-actions">`;
   if (rows.length > n) h += `<button class="more">Show all ${rows.length}</button>`;
+  h += `<a class="btn" target="_blank" rel="noopener" href="${LOOKLIKE}?s=${rows.slice(0, n).map(r => encodeURIComponent(r.species)).join("|")}">Open ${all ? "list" : "top " + n} in LookLike</a></div>`;
   return h;
 }
-function bindMore(sec, s, j) { const b = sec.querySelector(".more"); if (b) b.onclick = () => { sec.querySelector(".stage").innerHTML = stageHtml(s, j, true); }; }
+function bindStage(sec, s, j) { const b = sec.querySelector(".more"); if (b) b.onclick = () => { sec.querySelector(".stage").innerHTML = stageHtml(s, j, true); bindStage(sec, s, j); }; }
 
 function drawPlots(s) {
   plotLayer.clearLayers();
   for (const p of s.plots_used || [])
-    L.circleMarker([p.lat, p.lon], {radius: 6, color: "#fff", weight: 2, fillColor: "#e08a1e", fillOpacity: 1})
+    L.circleMarker([p.lat, p.lon], {radius: 6, color: "#fff", weight: 2, fillColor: "#FF8C00", fillOpacity: 1})
       .bindTooltip(`NVS plot ${p.year ?? ""} · distance ${p.d.toFixed(2)}`).addTo(plotLayer);
 }
 
-async function loadRuns(sel) {
-  const runs = await (await fetch("/api/runs")).json();
-  $("#runs").innerHTML = `<option value="">Previous runs…</option>` +
-    runs.map(r => `<option value="${esc(r.id)}"${r.id === sel ? " selected" : ""}>${esc(r.id)}</option>`).join("");
-}
 (async () => {
   const regions = await (await fetch("/api/regions")).json();
   $("#region").innerHTML = Object.keys(regions).map(k => `<option value="${k}">${k}</option>`).join("");
   const k = Object.keys(regions)[0];
-  if (k) { regionLayer = L.geoJSON(regions[k].geojson, {style: {color: "#fff", weight: 1.5, dashArray: "4 4", fill: false}, interactive: false}).addTo(map);
-    map.fitBounds(regionLayer.getBounds()); }
-  loadRuns();
+  if (k) { const rl = L.geoJSON(regions[k].geojson, {style: {color: "#263b27", weight: 1.5, dashArray: "4 4", fill: false}, interactive: false}).addTo(map);
+    map.fitBounds(rl.getBounds()); }
 })();
 </script>
 </body>

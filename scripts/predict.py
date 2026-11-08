@@ -329,6 +329,14 @@ def main():
     renv = transform_vals(rec[[f"env_{v}" for v in VARS]].set_axis(VARS, axis=1))
     rec_Z = ((renv - mu) / sd)[VARS].to_numpy()
     rec["name"] = rec["nztcs_name"].fillna(rec["species"]).map(clean_name)
+    two = rec["name"].str.split().str[:2].str.join(" ")
+    sp_level = set(rec.loc[rec["name"] == two, "name"])
+    merge = (rec["name"] != two) & two.isin(sp_level)
+    if merge.any():
+        cat = rec[rec["name"] == two].drop_duplicates("name").set_index("name")
+        rec.loc[merge, "name"] = two[merge]
+        rec.loc[merge, "category"] = rec.loc[merge, "name"].map(cat["category"])
+        rec.loc[merge, "bioStatus"] = rec.loc[merge, "name"].map(cat["bioStatus"])
     nztcs = json.loads((ROOT.parent / "Occurd" / "nztcs.json").read_text(encoding="utf-8"))
     common = {}
     for v in nztcs.values():
@@ -336,6 +344,7 @@ def main():
             cn = v.get("maori") or v.get("common")
             if cn:
                 common.setdefault(clean_name(v["name"]), cn)
+                common.setdefault(" ".join(v["name"].split()[:2]), cn)
 
     def label(s):
         c = common.get(s) or common.get(" ".join(s.split()[:2]))
@@ -387,7 +396,12 @@ def main():
                            "rain": round(float(e["precip_ann"])), "slope": round(float(e["slope_deg"])),
                            "coast_km": round(float(np.expm1(e["distance_coast"])) / 1000, 1),
                            "covers": {k: round(v / m.sum(), 2) for k, v in covers.head(4).items()},
-                           "wetland": has_wl})
+                           "wetland": has_wl,
+                           "attrs": {v: (None if not np.isfinite(e[v]) else
+                                         round(float(np.expm1(e[v]) if v in ("distance_coast", WATER) else e[v]), 2))
+                                     for v in VARS},
+                           "scaled": {v: (None if not np.isfinite(zc[i]) else round(float(zc[i]), 3))
+                                      for i, v in enumerate(VARS)}})
         for stage in STAGES:
             sel = (visits["stage"] == stage).to_numpy()
             d = dist(zc, visit_Z[sel])
@@ -503,7 +517,7 @@ def main():
     sp_json = json.loads(sp.to_json(orient="records")) if len(sp) else []
     (out_dir / "report.json").write_text(json.dumps({
         "site": site, "region": region, "n_on_site": n_on_site, "on_site_buffer_m": ON_SITE_BUFFER_M,
-        "max_d": MAX_D, "fallback_d": FALLBACK_D, "units": units_meta, "stages": stages_meta,
+        "max_d": MAX_D, "fallback_d": FALLBACK_D, "groups": GROUPS, "wetland_var": WATER, "units": units_meta, "stages": stages_meta,
         "species": sp_json}, ensure_ascii=False, default=lambda o: o.item() if hasattr(o, "item") else str(o)),
         encoding="utf-8")
     print("\n".join(report))

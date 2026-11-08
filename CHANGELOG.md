@@ -1,5 +1,39 @@
 # Changelog
 
+## v0.11.0 (November 2026)
+
+- **Subspecies matching fixed.** A species-level record was being assigned
+  to the nominate subspecies or variety. In Gisborne, *Oplismenus hirtellus*
+  became subsp. *hirtellus* (At Risk), though the common NZ plant is subsp.
+  *imbecillis*. 34 species were affected, including *Solanum aviculare*,
+  *Linum monogynum* and *Brachyglottis kirkii*, some with a wrong threat
+  status.
+  - Where NZTCS splits a species, a species-level record now stays at
+    species level. It is native if any of its taxa is native, and it gets a
+    threat category only if all its taxa share one.
+  - Records identified to subspecies or variety are matched on that name,
+    not the species.
+  - In the lists, such records are merged into their species when that
+    species also has species-level records, so a plant isn't listed twice.
+  - Common names now also attach at species level.
+- **Map page:**
+  - Drawing works like Occurd: a polygon and rectangle toolbar; Finish,
+    Undo point and Cancel buttons; segment lengths while drawing. A new area
+    is orange and dashed while you adjust its corners, then solid.
+  - Basemaps (Map, Satellite, Greyscale, Topo), fonts and square controls
+    also follow Occurd.
+  - Distinct habitats are mapped as coloured, labelled units. Each unit says
+    what sets it apart from the others (inputs where it is above or below
+    every other unit), and has a "Model inputs" table: all 20 inputs, for
+    every unit side by side, grouped by climate, terrain, soil and wetland,
+    with the separating rows shaded.
+  - Species names open in LookLike, and each list has an "Open in LookLike"
+    button.
+  - The previous-runs list is gone. Downloads are a species CSV and the
+    units as GeoJSON with their model inputs.
+- `report.json` now carries each unit's model inputs (natural units and the
+  0–1 regional scale) and the variable groups.
+
 ## v0.10.0 (November 2026)
 
 - **Map interface.** `python scripts/serve.py` starts a local web page at

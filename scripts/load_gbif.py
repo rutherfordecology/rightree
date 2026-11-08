@@ -23,7 +23,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from native_status import classify  # noqa: E402
+from native_status import classify, match_name  # noqa: E402
 
 NVS = "788439f0-3b56-11dc-8c19-b8a03c50a862"
 INAT = "50c9509d-22c7-4a22-a47d-8c48425ef4a7"
@@ -74,8 +74,9 @@ def main():
                    + df["decimalLongitude"].round(5).astype(str) + "|" + date)
 
     # Natives only. Exotic records are kept apart for flagging expected weeds later.
-    st = classify(df["species"].unique())
-    df = df.join(st[["native", "nztcs_name", "bioStatus", "category"]], on="species")
+    df["match_name"] = [match_name(*t) for t in zip(df["species"], df["scientificName"], df["taxonRank"])]
+    st = classify(df["match_name"].unique())
+    df = df.join(st[["native", "nztcs_name", "bioStatus", "category"]], on="match_name")
     df[~df["native"]].to_csv(root / "data" / f"records_{name}_exotic.csv.gz", index=False)
     df = df[df["native"]].drop(columns="native"); steps["native"] = len(df)
 

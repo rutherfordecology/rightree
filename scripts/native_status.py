@@ -14,6 +14,7 @@ Usage:
 Writes data/native_status_<name>.csv (one row per species, for review).
 """
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +24,19 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 NZTCS_PATH = ROOT.parent / "Occurd" / "nztcs.json"
 NATIVE_BIO = {"Endemic", "Non-endemic"}
+
+
+INFRA = re.compile(r"^(\S+ \S+ (?:subsp\.|var\.|f\.) [a-z-]+)")
+
+
+def match_name(species, scientific_name, rank):
+    """The name to match against NZTCS: the record's own subspecies, variety or
+    form when it was identified that far, otherwise the species."""
+    if rank in ("SUBSPECIES", "VARIETY", "FORM") and isinstance(scientific_name, str):
+        m = INFRA.match(scientific_name)
+        if m:
+            return m.group(1)
+    return species
 
 
 def classify(names):
@@ -39,6 +53,12 @@ def classify(names):
     by_name = {v["name"]: v for v in nztcs.values() if isinstance(v, dict) and v.get("name")}
     overrides = json.loads((ROOT / "config" / "native_overrides.json").read_text(encoding="utf-8"))["overrides"]
 
+    # Infraspecific taxa under each species, to spot species NZTCS splits.
+    infra = {}
+    for nm in by_name:
+        if INFRA.match(nm) or len(nm.split()) >= 4:
+            infra.setdefault(" ".join(nm.split()[:2]), []).append(nm)
+
     rows = []
     for n in names:
         r = resolved.get(n)
@@ -47,6 +67,22 @@ def classify(names):
         native = bool(v) and bio in NATIVE_BIO and cat != "Introduced and Naturalised"
         how = r["via"] if r else "not in nztcs"
         nztcs_name = r["n"] if r else None
+        # A species-level record can't be pinned to one of several subspecies
+        # or varieties. The resolver's nominate pass would pick e.g. Oplismenus
+        # hirtellus subsp. hirtellus (At Risk) when NZ's common plant is subsp.
+        # imbecillis. Keep the species: native if any of its taxa is native, and
+        # a threat category only if they all share it.
+        if r and "nominate" in r["via"]:
+            sp = " ".join(r["n"].split()[:2])
+            kids = [by_name[k] for k in infra.get(sp, [])]
+            if len(kids) > 1:
+                cats = {k.get("category") for k in kids}
+                nat = [k for k in kids if k.get("bioStatus") in NATIVE_BIO and k.get("category") != "Introduced and Naturalised"]
+                native = bool(nat)
+                bio = nat[0]["bioStatus"] if nat else kids[0].get("bioStatus")
+                cat = cats.pop() if len(cats) == 1 else None
+                how = r["via"].replace("nominate", "species level; NZTCS splits it")
+                nztcs_name = sp
         if n in overrides:
             o = overrides[n]
             native, how, nztcs_name = o["native"], "override: " + o["why"], o.get("nztcs_name")
@@ -60,9 +96,10 @@ def classify(names):
 def main():
     """Review table over every species in the load, natives and exotics."""
     name = sys.argv[1]
-    df = pd.concat([pd.read_csv(ROOT / "data" / f"records_{name}{s}.csv.gz", usecols=["species"], low_memory=False)
+    df = pd.concat([pd.read_csv(ROOT / "data" / f"records_{name}{s}.csv.gz",
+                                usecols=["species", "scientificName", "taxonRank"], low_memory=False)
                     for s in ("", "_exotic")])
-    counts = df["species"].value_counts()
+    counts = pd.Series([match_name(*t) for t in zip(df["species"], df["scientificName"], df["taxonRank"])]).value_counts()
     st = classify(counts.index)
     st["records"] = counts
     st = st.sort_values("records", ascending=False)
