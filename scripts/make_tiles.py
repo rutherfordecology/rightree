@@ -22,6 +22,7 @@ from predict import ROOT, VARS, region_stats  # noqa: E402
 
 TILE = 256
 LAYERS = VARS + ["lcdb_class", "wetland_status"]
+OPTIONAL = ["potential_ecosystem"]          # Eco-index, from load_ecoindex.py
 
 
 def main():
@@ -33,7 +34,7 @@ def main():
         shutil.rmtree(out, ignore_errors=True)
         out.mkdir()
         meta = None
-        for layer in LAYERS:
+        for layer in LAYERS + [o for o in OPTIONAL if (env_dir / f"{o}.tif").exists()]:
             with rasterio.open(env_dir / f"{layer}.tif") as s:
                 a, t, nd = s.read(1), s.transform, s.nodata
                 if meta is None:

@@ -187,6 +187,9 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
       <li><b>Environment:</b> New Zealand Environmental Data Stack (NZEnvDS) v1.1, McCarthy et al. 2021; CC BY 4.0.</li>
       <li><b>Land cover:</b> Land Cover Database v6 (LCDB), Manaaki Whenua – Landcare Research, via LRIS; CC BY 4.0.</li>
       <li><b>Wetlands:</b> Gisborne District Council Regional Wetland Assessment 2022 (Morphum Environmental); CC BY 4.0.</li>
+      <li><b>Potential natural ecosystems:</b> this work uses a derivative of “Ecosystem Projector for NZ” by
+        <a href="https://eco-index.nz/" target="_blank" rel="noopener">Eco-index</a> (based on Potential Natural Vegetation,
+        Manaaki Whenua), used under CC BY 4.0; gridded to 100 m.</li>
       <li><b>Names and threat status:</b> New Zealand Threat Classification System (Department of Conservation) and the
         New Zealand Organisms Register.</li>
       <li><b>Region boundary:</b> © OpenStreetMap contributors (ODbL). Basemaps as credited on the map.</li>
@@ -520,10 +523,11 @@ function show(j) {
     const stages = j.stages.filter(s => s.unit === u.unit);
     const covers = Object.entries(u.covers).map(([k, v]) => `${esc(k)} ${Math.round(v * 100)}%`).join(", ");
     const at = apartText(u, j.units);
+    const pot = (u.potential || []).map(p => `${esc(p.name)} ${Math.round(p.share * 100)}%`).join(", ");
     html += `<section class="unit" data-unit="${u.unit}">
       <div class="unit-head" title="Zoom to this unit">${multi ? `<span class="swatch" style="background:${UNIT_COLOURS[(u.unit - 1) % 4]}"></span>` : ""}
         <div><h2>${multi ? `Unit ${u.unit} · ` : ""}${u.ha.toLocaleString()} ha</h2>
-        <div class="env">${u.temp} °C mean · ${u.rain.toLocaleString()} mm rain · slope ${u.slope}° · ${u.coast_km} km from coast${u.wetland ? " · natural wetland" : ""}<br>Now: ${covers}</div>
+        <div class="env">${u.temp} °C mean · ${u.rain.toLocaleString()} mm rain · slope ${u.slope}° · ${u.coast_km} km from coast${u.wetland ? " · natural wetland" : ""}<br>Now: ${covers}${pot ? `<br><span title="Eco-index Ecosystem Projector: the ecosystem expected here before people, from Potential Natural Vegetation">Naturally: ${pot}</span>` : ""}</div>
         ${at ? `<div class="apart"><b>Sets it apart:</b> ${at}</div>` : ""}</div></div>
       <details class="attrs"><summary>Model inputs${multi ? " for all units" : ""}</summary>${attrsTable(u, j.units, j.groups, j.wetland_var)}</details>
       <div class="tabs">${stages.map((s, i) => {

@@ -314,6 +314,12 @@ def main():
     lc = grid.values("lcdb_class", rows, cols)
     lc_names = json.loads((env_dir / "lcdb_classes.json").read_text(encoding="utf-8"))
     wst = grid.values("wetland_status", rows, cols)
+    # Potential natural ecosystem (Eco-index Ecosystem Projector), if gridded:
+    # context for each unit, not a model input.
+    pot = pot_names = None
+    if "potential_ecosystem" in grid.layers:
+        pot = grid.values("potential_ecosystem", rows, cols)
+        pot_names = json.loads(gridio.read_bytes(env_dir / "potential_ecosystem_classes.json"))
 
     # unit polygons for the map: each unit's cells merged, cut to the site
     boxes = grid.cell_boxes(rows, cols)
@@ -414,16 +420,26 @@ def main():
         e = cells[m].median()
         covers = pd.Series(lc[m]).map(lambda v: lc_names.get(str(v), "no data")).value_counts()
         has_wl = bool(np.isin(wst[m], [1, 2, 3]).any())
+        potential = []
+        if pot is not None:
+            pc = pd.Series(pot[m]).value_counts()
+            potential = [{"name": pot_names[str(k)]["name"], "group": pot_names[str(k)]["group"],
+                          "share": round(v / m.sum(), 2)}
+                         for k, v in pc.items() if k > 0 and v / m.sum() >= 0.05][:4]
         report += [f"## Unit {u + 1}: {m.sum() * 1:,} ha",
                    f"- Mean annual temp {e['temp_meanAnn']:.1f} °C, rainfall {e['precip_ann']:.0f} mm, "
                    f"slope {e['slope_deg']:.0f}°, {np.expm1(e['distance_coast']) / 1000:.1f} km from coast",
                    "- Land cover now: " + ", ".join(f"{k} {v / m.sum():.0%}" for k, v in covers.head(4).items()),
-                   f"- Natural wetland in unit: {'yes' if has_wl else 'no'}", ""]
+                   f"- Natural wetland in unit: {'yes' if has_wl else 'no'}"]
+        if potential:
+            report.append("- Potential natural ecosystem (Eco-index): "
+                          + ", ".join(f"{p['name']} {p['share']:.0%}" for p in potential))
+        report.append("")
         units_meta.append({"unit": u + 1, "ha": int(m.sum()), "temp": round(float(e["temp_meanAnn"]), 1),
                            "rain": round(float(e["precip_ann"])), "slope": round(float(e["slope_deg"])),
                            "coast_km": round(float(np.expm1(e["distance_coast"])) / 1000, 1),
                            "covers": {k: round(v / m.sum(), 2) for k, v in covers.head(4).items()},
-                           "wetland": has_wl,
+                           "wetland": has_wl, "potential": potential,
                            "attrs": {v: (None if not np.isfinite(e[v]) else
                                          round(float(np.expm1(e[v]) if v in ("distance_coast", WATER) else e[v]), 2))
                                      for v in VARS},

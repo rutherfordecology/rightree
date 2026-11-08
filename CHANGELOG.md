@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.16.0 (November 2026)
+
+- **Potential natural ecosystem.** Each unit card shows the ecosystem
+  expected there before people ("Naturally: Kahikatea-pukatea-tawa forest
+  92%"), from Eco-index's Ecosystem Projector (Potential Natural Vegetation
+  extended with wetlands; CC BY 4.0). Types under 5% of a unit are left out.
+  It is context only, not a model input, so species lists are unchanged.
+- `scripts/load_ecoindex.py` grids a Koordinates export of the layer (a free
+  sign-in is needed to download it) to `potential_ecosystem.tif`;
+  `make_tiles.py` tiles it when present. Credited on the page and in the
+  Space README.
+
 ## v0.15.0 (November 2026)
 
 - **Runs in the browser.** Hugging Face now charges for Docker Spaces, so

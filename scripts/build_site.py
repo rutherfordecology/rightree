@@ -52,6 +52,9 @@ Each dataset keeps its own licence:
   CC BY 4.0.
 - **Wetlands:** Gisborne District Council Regional Wetland Assessment 2022;
   CC BY 4.0.
+- **Potential natural ecosystems:** this work uses a derivative of
+  'Ecosystem Projector for NZ' by Eco-index (based on Potential Natural
+  Vegetation, Manaaki Whenua), used under CC BY 4.0; gridded to 100 m.
 - **Names:** New Zealand Threat Classification System (Department of
   Conservation).
 - **Region boundary:** © OpenStreetMap contributors (ODbL).
@@ -81,7 +84,9 @@ def main():
     for env in sorted(p for p in env_root.iterdir() if (p / "tiles" / "grid.json").exists()):
         r = env.name
         shutil.copytree(env / "tiles", data / "env" / r / "tiles")
-        for f in ["lcdb_classes.json", "region_stats.json"]:
+        for f in ["lcdb_classes.json", "region_stats.json", "potential_ecosystem_classes.json"]:
+            if not (env / f).exists():
+                continue
             shutil.copy2(env / f, data / "env" / r / f)
             preload.append(f"data/env/{r}/{f}")
         preload.append(f"data/env/{r}/tiles/grid.json")
