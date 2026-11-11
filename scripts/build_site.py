@@ -72,22 +72,27 @@ def main():
     site = {"version": re.search(r"^## (v[\d.]+)", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"), re.M)[1],
             "regions": {}}
     genera = set()
+    # The browser loads the common files at start and a region's own files
+    # only when that region is chosen, so adding regions doesn't add to
+    # every visitor's download.
+    per_region = {}
     env_root = ROOT / "data" / "env"
     meta = json.loads((ROOT / "config" / "regions.json").read_text(encoding="utf-8"))
     order = [k for k in meta if not k.startswith("_")]
     envs = [p for p in env_root.iterdir() if (p / "tiles" / "grid.json").exists()]
     for env in sorted(envs, key=lambda p: order.index(p.name) if p.name in order else 99):
         r = env.name
+        per_region[r] = []
         shutil.copytree(env / "tiles", data / "env" / r / "tiles")
         for f in ["lcdb_classes.json", "region_stats.json", "potential_ecosystem_classes.json"]:
             if not (env / f).exists():
                 continue
             shutil.copy2(env / f, data / "env" / r / f)
-            preload.append(f"data/env/{r}/{f}")
-        preload.append(f"data/env/{r}/tiles/grid.json")
+            per_region[r].append(f"data/env/{r}/{f}")
+        per_region[r].append(f"data/env/{r}/tiles/grid.json")
         rec = ROOT / "data" / f"records_{r}_tagged.csv.gz"
         shutil.copy2(rec, data / rec.name)
-        preload.append(f"data/{rec.name}")
+        per_region[r].append(f"data/{rec.name}")
         import pandas as pd
         names = pd.read_csv(rec, usecols=["species"])["species"].dropna()
         genera |= set(names.str.split().str[0])
@@ -107,7 +112,7 @@ def main():
     preload.append("data/nztcs_names.json")
 
     (target / "site.json").write_text(json.dumps(site, ensure_ascii=False), encoding="utf-8")
-    (target / "files.json").write_text(json.dumps(preload), encoding="utf-8")
+    (target / "files.json").write_text(json.dumps({"common": preload, "regions": per_region}), encoding="utf-8")
     (target / "README.md").write_text(SITE_README, encoding="utf-8")
     (target / ".nojekyll").write_text("", encoding="utf-8")     # GitHub Pages: serve files as they are
 

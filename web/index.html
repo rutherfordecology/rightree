@@ -249,8 +249,8 @@ td.lay i { display: inline-block; width: 9px; height: 9px; background: var(--sla
       <p>Rightree lists the native plants expected at a site, from where they grow in similar places nearby.</p>
       <label class="regpick">Your region <select id="welcomeRegion"></select></label>
       <p>The model runs in your browser, so nothing you draw leaves your computer. To do that it downloads about
-        <b>45 MB once</b> (Python and its maths libraries), which your browser keeps for next time. Each site then
-        loads a few MB of map data.</p>
+        <b>30–40 MB once</b> (Python, its maths libraries and your region's plant records), which your browser keeps
+        for next time. Each site then loads a few MB of map data.</p>
       <p>On a mobile connection you may want to wait for Wi-Fi.</p>
       <div class="actions"><button id="welcomeLater">Not now</button><button id="welcomeOk" class="primary">Accept and load</button></div>
     </div>
@@ -481,7 +481,9 @@ function startWorker() {
   };
   worker.onerror = e => { if (pending) { pending.reject(new Error(e.message || "The model failed to load.")); pending = null; } };
 }
-const predict = body => new Promise((resolve, reject) => { startWorker(); pending = {resolve, reject}; worker.postMessage({body}); });
+const predict = body => new Promise((resolve, reject) => { startWorker(); pending = {resolve, reject}; worker.postMessage({type: "predict", body}); });
+// Start loading the chosen region's records once the visitor has accepted.
+const prepareRegion = () => { if (worker && $("#region").value) worker.postMessage({type: "prepare", region: $("#region").value}); };
 let accepted = false;
 try { accepted = localStorage.getItem(ACCEPT_KEY) === "1"; } catch (e) {}
 let afterAccept = null;
@@ -489,7 +491,7 @@ function askToLoad(then) { afterAccept = then || null; $("#welcome").style.displ
 $("#welcomeOk").onclick = () => {
   accepted = true;
   try { localStorage.setItem(ACCEPT_KEY, "1"); } catch (e) {}
-  $("#welcome").style.display = "none"; startWorker();
+  $("#welcome").style.display = "none"; startWorker(); prepareRegion();
   const f = afterAccept; afterAccept = null; if (f) f();
 };
 $("#welcomeLater").onclick = () => {
@@ -903,6 +905,7 @@ function drawPlots(s) {
     document.querySelector("#gbifCite").innerHTML = esc(r.citation || "GBIF.org occurrence download").replace(
       /https:\/\/doi\.org\/\S+/, m => `<a href="${m}" target="_blank" rel="noopener">${m}</a>`);
     if (r.wetlands) document.querySelector("#wetCite").textContent = r.wetlands;
+    prepareRegion();
   }
   let saved = null;
   try { saved = localStorage.getItem("rightree-region"); } catch (e) {}

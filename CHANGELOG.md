@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.21.0 (November 2026)
+
+- **Each visitor downloads only their region's records.** The browser used to
+  load every region's records when the model started (about 9 MB for two
+  regions, and growing with each one added). `files.json` now splits the
+  common files from each region's own files, and the worker loads a region's
+  records, grid index and class names the first time that region is chosen or
+  predicted. Switching regions loads the other one then. Grid tiles were
+  already fetched per site.
+- `config/regions.json` lists each region's `neighbours`, ready for drawing
+  similar sites from neighbouring regions (not used by the model yet).
+- The welcome note's download estimate is now 30–40 MB.
+
 ## v0.20.0 (November 2026)
 
 - **Evidence on the map.** For the unit and stage being viewed, the map shows

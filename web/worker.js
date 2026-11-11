@@ -1,26 +1,27 @@
 // Runs the Rightree model (scripts/predict.py) in the browser with Pyodide.
 // The page posts {type: "predict", body}; the worker answers with
 // {type: "status", text} while it works, then {type: "result", report} or
-// {type: "error", message}.
+// {type: "error", message}. The page can also post {type: "prepare", region}
+// when a region is chosen, so that region's records load before Predict.
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/";
 importScripts(PYODIDE + "pyodide.js");
 const BASE = new URL("./", self.location).href;
 const status = text => postMessage({type: "status", text});
 
-let py = null;
+let py = null, manifest = null;
+const put = async f => {
+  const r = await fetch(BASE + f);
+  if (!r.ok) throw new Error(`Couldn't load ${f}`);
+  const p = "/rightree/" + f;
+  py.FS.mkdirTree(p.slice(0, p.lastIndexOf("/")));
+  py.FS.writeFile(p, new Uint8Array(await r.arrayBuffer()));
+};
 const starting = (async () => {
   status("Loading Python…");
   py = await loadPyodide({indexURL: PYODIDE});
   await py.loadPackage(["numpy", "pandas", "shapely", "scikit-learn"]);
-  status("Loading records…");
-  const files = await (await fetch(BASE + "files.json")).json();
-  await Promise.all(files.map(async f => {
-    const r = await fetch(BASE + f);
-    if (!r.ok) throw new Error(`Couldn't load ${f}`);
-    const p = "/rightree/" + f;
-    py.FS.mkdirTree(p.slice(0, p.lastIndexOf("/")));
-    py.FS.writeFile(p, new Uint8Array(await r.arrayBuffer()));
-  }));
+  manifest = await (await fetch(BASE + "files.json")).json();
+  await Promise.all(manifest.common.map(put));
   // Grid tiles are fetched only when a site needs them (synchronous XHR is
   // allowed in workers, and the model's Python code is synchronous).
   py.globals.set("fetch_sync", path => {
@@ -60,12 +61,33 @@ def run_predict(region, rid, area):
 })();
 starting.catch(() => {});   // reported on the first prediction instead
 
+// Each region's own files (its records, grid index and class names) load
+// once, the first time that region is chosen or predicted.
+const regionLoads = {};
+function prepare(region) {
+  if (!regionLoads[region]) {
+    regionLoads[region] = (async () => {
+      await starting;
+      const files = manifest.regions[region];
+      if (!files) throw new Error(`No data for region ${region}`);
+      status("Loading records…");
+      await Promise.all(files.map(put));
+    })();
+    regionLoads[region].catch(() => { delete regionLoads[region]; });   // retry next time
+  }
+  return regionLoads[region];
+}
+
 const slug = s => (s || "site").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "site";
 
 onmessage = async e => {
+  if (e.data.type === "prepare") {
+    prepare(e.data.region).then(() => status("Ready"), () => {});   // errors show on Predict
+    return;
+  }
   const {body} = e.data;
   try {
-    await starting;
+    await prepare(body.region);
     status("Predicting…");
     const d = new Date(), pad = n => String(n).padStart(2, "0");
     const rid = `${slug(body.name)}-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-` +
