@@ -9,5 +9,10 @@
   "label": "Te Matau-a-Māui (Hawke's Bay)",
   "neighbours": ["tairawhiti"],
   "wetlands": "Freshwater Ecosystems of New Zealand (FENZ) current wetlands, Department of Conservation, via Burge (2022), doi:10.7931/f77d-vw23; CC BY 4.0. Extent about 1999–2003; small wetlands may be missing."
+ },
+ "northland": {
+  "label": "Te Tai Tokerau (Northland)",
+  "neighbours": [],
+  "wetlands": "Freshwater Ecosystems of New Zealand (FENZ) current wetlands, Department of Conservation, via Burge (2022), doi:10.7931/f77d-vw23; CC BY 4.0. Extent about 1999–2003; small wetlands may be missing."
  }
 }

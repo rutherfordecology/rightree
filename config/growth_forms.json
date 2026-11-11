@@ -1,6 +1,10 @@
 {
- "_note": "Growth form and usual habitat of each native genus in the regional records (Tairāwhiti, Hawke's Bay), set by hand (NZTCS has no growth form). habitat: forest = forest interior or understorey; both = forest and open or scrub (pioneers, edge species); open = grassland, scrub, rock, riverbed; wetland; coast. Used to keep forest-only plants out of the Open list, and to re-stage NVS plots (canopy tree = mature forest indicator; canopy tree, small tree, shrub and tree fern = woody). species entries override their genus. Check and correct freely.",
+ "_note": "Growth form and usual habitat of each native genus in the regional records (Tairāwhiti, Hawke's Bay, Northland), set by hand (NZTCS has no growth form). habitat: forest = forest interior or understorey; both = forest and open or scrub (pioneers, edge species); open = grassland, scrub, rock, riverbed; wetland; coast. Used to keep forest-only plants out of the Open list, and to re-stage NVS plots (canopy tree = mature forest indicator; canopy tree, small tree, shrub and tree fern = woody). species entries override their genus. Check and correct freely.",
  "genera": {
+  "Abrodictyum": [
+   "fern",
+   "forest"
+  ],
   "Abrotanella": [
    "herb",
    "open"
@@ -16,6 +20,10 @@
   "Aciphylla": [
    "herb",
    "open"
+  ],
+  "Ackama": [
+   "small tree",
+   "forest"
   ],
   "Acrothamnus": [
    "shrub",
@@ -52,6 +60,10 @@
   "Alsophila": [
    "tree fern",
    "forest"
+  ],
+  "Alternanthera": [
+   "herb",
+   "wetland"
   ],
   "Anaphalioides": [
    "herb",
@@ -109,6 +121,10 @@
    "fern",
    "forest"
   ],
+  "Ascarina": [
+   "small tree",
+   "forest"
+  ],
   "Asplenium": [
    "fern",
    "forest"
@@ -129,6 +145,10 @@
    "graminoid",
    "open"
   ],
+  "Austrostipa": [
+   "graminoid",
+   "coast"
+  ],
   "Avicennia": [
    "small tree",
    "coast"
@@ -145,6 +165,10 @@
    "canopy tree",
    "forest"
   ],
+  "Blechnum": [
+   "fern",
+   "open"
+  ],
   "Bolboschoenus": [
    "graminoid",
    "wetland"
@@ -156,6 +180,10 @@
   "Brachyscome": [
    "herb",
    "open"
+  ],
+  "Bromus": [
+   "graminoid",
+   "coast"
   ],
   "Bulbinella": [
    "herb",
@@ -201,9 +229,17 @@
    "graminoid",
    "wetland"
   ],
+  "Carpobrotus": [
+   "herb",
+   "coast"
+  ],
   "Carpodetus": [
    "small tree",
    "forest"
+  ],
+  "Cassytha": [
+   "climber",
+   "open"
   ],
   "Celmisia": [
    "herb",
@@ -212,6 +248,14 @@
   "Centella": [
    "herb",
    "open"
+  ],
+  "Centipeda": [
+   "herb",
+   "wetland"
+  ],
+  "Ceodes": [
+   "small tree",
+   "coast"
   ],
   "Chaerophyllum": [
    "herb",
@@ -232,6 +276,10 @@
   "Chionochloa": [
    "graminoid",
    "open"
+  ],
+  "Christella": [
+   "fern",
+   "both"
   ],
   "Clematis": [
    "climber",
@@ -285,6 +333,18 @@
    "herb",
    "open"
   ],
+  "Crassula": [
+   "herb",
+   "open"
+  ],
+  "Cryptostylis": [
+   "herb",
+   "open"
+  ],
+  "Cyclosorus": [
+   "fern",
+   "wetland"
+  ],
   "Cyperus": [
    "graminoid",
    "wetland"
@@ -312,6 +372,10 @@
   "Dennstaedtia": [
    "fern",
    "open"
+  ],
+  "Deparia": [
+   "fern",
+   "forest"
   ],
   "Deschampsia": [
    "graminoid",
@@ -381,6 +445,14 @@
    "canopy tree",
    "forest"
   ],
+  "Elatine": [
+   "aquatic",
+   "wetland"
+  ],
+  "Elatostema": [
+   "herb",
+   "forest"
+  ],
   "Eleocharis": [
    "graminoid",
    "wetland"
@@ -421,6 +493,10 @@
    "graminoid",
    "coast"
   ],
+  "Fimbristylis": [
+   "graminoid",
+   "coast"
+  ],
   "Forstera": [
    "herb",
    "open"
@@ -452,6 +528,10 @@
   "Geniostoma": [
    "shrub",
    "forest"
+  ],
+  "Genoplesium": [
+   "herb",
+   "open"
   ],
   "Gentianella": [
    "herb",
@@ -549,6 +629,10 @@
    "epiphyte",
    "both"
   ],
+  "Ipomoea": [
+   "climber",
+   "coast"
+  ],
   "Isachne": [
    "graminoid",
    "wetland"
@@ -609,6 +693,10 @@
    "epiphyte",
    "forest"
   ],
+  "Leionema": [
+   "shrub",
+   "both"
+  ],
   "Lemna": [
    "aquatic",
    "wetland"
@@ -640,6 +728,10 @@
   "Leptospermum": [
    "small tree",
    "both"
+  ],
+  "Leptostigma": [
+   "herb",
+   "wetland"
   ],
   "Leucogenes": [
    "herb",
@@ -697,6 +789,10 @@
    "epiphyte",
    "forest"
   ],
+  "Loxsoma": [
+   "fern",
+   "both"
+  ],
   "Luzula": [
    "graminoid",
    "open"
@@ -720,6 +816,10 @@
   "Macropiper": [
    "shrub",
    "forest"
+  ],
+  "Macrothelypteris": [
+   "fern",
+   "both"
   ],
   "Manoao": [
    "canopy tree",
@@ -752,6 +852,10 @@
   "Microlaena": [
    "graminoid",
    "forest"
+  ],
+  "Microschizaea": [
+   "fern",
+   "open"
   ],
   "Microseris": [
    "herb",
@@ -805,6 +909,10 @@
    "small tree",
    "both"
   ],
+  "Nephrolepis": [
+   "fern",
+   "both"
+  ],
   "Nertera": [
    "herb",
    "forest"
@@ -812,6 +920,10 @@
   "Nestegis": [
    "canopy tree",
    "forest"
+  ],
+  "Netrostylis": [
+   "graminoid",
+   "wetland"
   ],
   "Notelaea": [
    "small tree",
@@ -853,6 +965,10 @@
    "herb",
    "open"
   ],
+  "Oxybasis": [
+   "herb",
+   "coast"
+  ],
   "Ozothamnus": [
    "shrub",
    "open"
@@ -884,6 +1000,10 @@
   "Parsonsia": [
    "climber",
    "forest"
+  ],
+  "Paspalum": [
+   "graminoid",
+   "open"
   ],
   "Passiflora": [
    "climber",
@@ -1009,6 +1129,10 @@
    "shrub",
    "forest"
   ],
+  "Psilotum": [
+   "fern",
+   "both"
+  ],
   "Pteridium": [
    "fern",
    "open"
@@ -1023,6 +1147,10 @@
   ],
   "Pterostylis": [
    "herb",
+   "forest"
+  ],
+  "Ptisana": [
+   "fern",
    "forest"
   ],
   "Pyrrosia": [
@@ -1101,6 +1229,10 @@
    "small tree",
    "forest"
   ],
+  "Schizaea": [
+   "fern",
+   "open"
+  ],
   "Schoenoplectus": [
    "graminoid",
    "wetland"
@@ -1108,6 +1240,10 @@
   "Schoenus": [
    "graminoid",
    "wetland"
+  ],
+  "Scleranthus": [
+   "herb",
+   "open"
   ],
   "Senecio": [
    "herb",
@@ -1125,6 +1261,10 @@
    "shrub",
    "both"
   ],
+  "Sonchus": [
+   "herb",
+   "coast"
+  ],
   "Sophora": [
    "small tree",
    "both"
@@ -1132,6 +1272,10 @@
   "Sparganium": [
    "aquatic",
    "wetland"
+  ],
+  "Spergularia": [
+   "herb",
+   "coast"
   ],
   "Sphaeropteris": [
    "tree fern",
@@ -1157,6 +1301,22 @@
    "small tree",
    "forest"
   ],
+  "Stuckenia": [
+   "aquatic",
+   "wetland"
+  ],
+  "Styphelia": [
+   "shrub",
+   "open"
+  ],
+  "Suaeda": [
+   "herb",
+   "coast"
+  ],
+  "Syzygium": [
+   "canopy tree",
+   "forest"
+  ],
   "Tetragonia": [
    "herb",
    "coast"
@@ -1169,6 +1329,10 @@
    "herb",
    "open"
   ],
+  "Thelypteris": [
+   "fern",
+   "wetland"
+  ],
   "Thyridia": [
    "herb",
    "wetland"
@@ -1176,6 +1340,10 @@
   "Tmesipteris": [
    "epiphyte",
    "forest"
+  ],
+  "Todea": [
+   "fern",
+   "both"
   ],
   "Toronia": [
    "small tree",
@@ -1192,6 +1360,10 @@
   "Typha": [
    "graminoid",
    "wetland"
+  ],
+  "Urostemon": [
+   "epiphyte",
+   "forest"
   ],
   "Urtica": [
    "herb",
@@ -1221,6 +1393,14 @@
    "herb",
    "forest"
   ],
+  "Wolffia": [
+   "aquatic",
+   "wetland"
+  ],
+  "Xeronema": [
+   "herb",
+   "coast"
+  ],
   "Zealandia": [
    "epiphyte",
    "forest"
@@ -1232,6 +1412,10 @@
   "Zotovia": [
    "graminoid",
    "forest"
+  ],
+  "Zoysia": [
+   "graminoid",
+   "coast"
   ]
  },
  "species": {
