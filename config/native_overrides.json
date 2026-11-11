@@ -1,6 +1,9 @@
 {
-  "_note": "Force a native verdict for a GBIF species name the automatic matcher gets wrong. Keys are GBIF `species` values. nztcs_name is the NZTCS taxon it corresponds to, where there is one. Checked against nztcs.json on 2026-11-09.",
+  "_note": "Force a native verdict for a GBIF species name the automatic matcher gets wrong. Keys are GBIF `species` values. nztcs_name is the NZTCS taxon it corresponds to, where there is one. Checked against nztcs.json on 2026-11-09 and 2026-11-12.",
   "overrides": {
+    "Freycinetia baueriana": {"native": true, "nztcs_name": "Freycinetia banksii", "why": "GBIF lumps NZ kiekie into F. baueriana; NZTCS Freycinetia banksii (Endemic)"},
+    "Ranunculus repens": {"native": false, "nztcs_name": null, "why": "exotic creeping buttercup; the one-letter rule matched it to the native R. recens"},
+    "Convolvulus sepium": {"native": false, "nztcs_name": null, "why": "species-level name can't separate native Calystegia sepium subsp. roseata from naturalised subsp. sepium"},
     "Shawia rani": {"native": true, "nztcs_name": "Olearia rani var. rani", "why": "GBIF genus transfer; NZTCS Olearia rani (Endemic)"},
     "Shawia furfuracea": {"native": true, "nztcs_name": "Olearia furfuracea", "why": "GBIF genus transfer; NZTCS Olearia (Endemic)"},
     "Shawia ilicifolia": {"native": true, "nztcs_name": "Olearia ilicifolia", "why": "GBIF genus transfer; NZTCS Olearia (Endemic)"},

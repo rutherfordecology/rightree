@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.22.0 (November 2026)
+
+- **Northland.** Te Tai Tokerau is the third region: GBIF download
+  doi:10.15468/dl.s6fqsa (144,928 records, 53,520 native kept, including 664
+  NVS plot visits), NZEnvDS, LCDB v6 and FENZ wetlands. Four check sites
+  (`nl-*` in `config/test_sites.json`): Waipoua, Puketī, a farm near
+  Maungatapere and Aupouri dunes.
+- **GBIF's new occurrence status.** Downloads now say DETECTED instead of
+  PRESENT; `load_gbif.py` accepts both (it was dropping every record).
+- **Native status fixes, all regions.** Creeping buttercup (*Ranunculus
+  repens*, a weed) had been matched to the native *R. recens* by the
+  one-letter rule and counted as Threatened in Gisborne and Hawke's Bay; it is
+  now overridden as exotic. Kiekie (*Freycinetia baueriana* in GBIF) is now
+  native, as NZTCS *F. banksii*. *Convolvulus sepium* is left out, because the
+  name can't separate the native bindweed from the naturalised one. NZTCS
+  "Non-resident Native" taxa (vagrants and recent colonists, such as drift
+  coconuts) no longer count as native. All three regions reloaded.
+- **Mangrove** (LCDB) is in the open and coastal stage; records in mangroves
+  were being dropped.
+- Growth forms for 46 more genera, mostly northern (`config/growth_forms.json`).
+- Known gap: NVS blurs some species to 10 km in GBIF (kauri, northern rātā,
+  maire tawake, ramarama, Kirk's pine and others), so they drop out of the
+  plot lists. Kauri is absent from the Waipoua and Puketī plot lists for this
+  reason.
+
 ## v0.21.0 (November 2026)
 
 - **Each visitor downloads only their region's records.** The browser used to

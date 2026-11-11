@@ -58,7 +58,8 @@ def main():
 
     steps = {"raw": raw}
     df = df[df["phylum"] == "Tracheophyta"]; steps["vascular"] = len(df)
-    df = df[df["occurrenceStatus"].fillna("PRESENT") == "PRESENT"]; steps["present"] = len(df)
+    # GBIF renamed PRESENT/ABSENT to DETECTED/NOT_DETECTED in late 2026 downloads.
+    df = df[df["occurrenceStatus"].fillna("PRESENT").isin(["PRESENT", "DETECTED"])]; steps["present"] = len(df)
     df = df[df["species"].notna()]; steps["to_species"] = len(df)
     df = df[df["datasetKey"] != PLANTNET_AUTO]; steps["not_plantnet_auto"] = len(df)
     df = df[df["coordinateUncertaintyInMeters"] <= MAX_UNCERTAINTY_M]; steps["within_100m"] = len(df)

@@ -24,6 +24,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 NZTCS_PATH = ROOT.parent / "Occurd" / "nztcs.json"
 NATIVE_BIO = {"Endemic", "Non-endemic"}
+NOT_RESIDENT = {"Introduced and Naturalised", "Non-resident Native"}
 
 
 INFRA = re.compile(r"^(\S+ \S+ (?:subsp\.|var\.|f\.) [a-z-]+)")
@@ -64,7 +65,9 @@ def classify(names):
         r = resolved.get(n)
         v = by_name.get(r["n"]) if r else None
         bio, cat = (v or {}).get("bioStatus"), (v or {}).get("category")
-        native = bool(v) and bio in NATIVE_BIO and cat != "Introduced and Naturalised"
+        # Non-resident natives (vagrants and recent colonists, e.g. drift coconuts)
+        # aren't settled members of NZ plant communities, so they don't count.
+        native = bool(v) and bio in NATIVE_BIO and cat not in NOT_RESIDENT
         how = r["via"] if r else "not in nztcs"
         nztcs_name = r["n"] if r else None
         # A species-level record can't be pinned to one of several subspecies
@@ -77,7 +80,7 @@ def classify(names):
             kids = [by_name[k] for k in infra.get(sp, [])]
             if len(kids) > 1:
                 cats = {k.get("category") for k in kids}
-                nat = [k for k in kids if k.get("bioStatus") in NATIVE_BIO and k.get("category") != "Introduced and Naturalised"]
+                nat = [k for k in kids if k.get("bioStatus") in NATIVE_BIO and k.get("category") not in NOT_RESIDENT]
                 native = bool(nat)
                 bio = nat[0]["bioStatus"] if nat else kids[0].get("bioStatus")
                 cat = cats.pop() if len(cats) == 1 else None

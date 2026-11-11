@@ -64,7 +64,8 @@ STAGES = {
     "Open (grassland, riverbed, coast)": {
         "High Producing Exotic Grassland", "Low Producing Grassland", "Tall Tussock Grassland",
         "Depleted Grassland", "Herbaceous Freshwater Vegetation", "Herbaceous Saline Vegetation",
-        "Gravel and Rock", "Sand and Gravel", "River", "Landslide", "Flaxland"},
+        "Gravel and Rock", "Sand and Gravel", "River", "Landslide", "Flaxland",
+        "Mangrove"},   # coastal and saline vegetation; extensive in Northland
 }
 K_PLOTS, K_OBS = 20, 100
 MAX_D = 0.15        # Gower distance (share of each layer's range) for a usable analogue
