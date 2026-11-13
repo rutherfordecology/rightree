@@ -9,7 +9,7 @@ herbs come out of the same analysis. The list is meant to inform management and
 revegetation planning. It is a starting point to be checked on the ground, not
 a survey.
 
-Status: prototype (v0.22.0). Three regions: Tairāwhiti (Gisborne), Te Matau-a-Māui
+Status: prototype (v0.22.1). Three regions: Tairāwhiti (Gisborne), Te Matau-a-Māui
 (Hawke's Bay) and Te Tai Tokerau (Northland); visitors pick one when they start. Native records are tagged with
 environment, land cover and wetlands. See
 [`docs/design.md`](docs/design.md).

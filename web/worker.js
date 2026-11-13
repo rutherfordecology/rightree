@@ -9,9 +9,16 @@ const BASE = new URL("./", self.location).href;
 const status = text => postMessage({type: "status", text});
 
 let py = null, manifest = null;
+// Downloads are retried twice: one dropped request (a network blip or a brief
+// GitHub Pages error) shouldn't fail a whole prediction.
+const TRIES = 3;
 const put = async f => {
-  const r = await fetch(BASE + f);
-  if (!r.ok) throw new Error(`Couldn't load ${f}`);
+  let r = null;
+  for (let i = 0; i < TRIES; i++) {
+    try { r = await fetch(BASE + f); if (r.ok) break; } catch (e) { r = null; }
+    await new Promise(ok => setTimeout(ok, 500 * (i + 1)));
+  }
+  if (!r || !r.ok) throw new Error(`Couldn't load ${f} (${r ? "HTTP " + r.status : "network error"}). Check your connection and press Predict again.`);
   const p = "/rightree/" + f;
   py.FS.mkdirTree(p.slice(0, p.lastIndexOf("/")));
   py.FS.writeFile(p, new Uint8Array(await r.arrayBuffer()));
@@ -25,12 +32,16 @@ const starting = (async () => {
   // Grid tiles are fetched only when a site needs them (synchronous XHR is
   // allowed in workers, and the model's Python code is synchronous).
   py.globals.set("fetch_sync", path => {
-    const x = new XMLHttpRequest();
-    x.open("GET", BASE + path.replace(/^\/rightree\//, ""), false);
-    x.responseType = "arraybuffer";
-    x.send();
-    if (x.status !== 200) throw new Error(`Couldn't load ${path}`);
-    return new Uint8Array(x.response);
+    let status = 0;
+    for (let i = 0; i < TRIES; i++) {
+      const x = new XMLHttpRequest();
+      x.open("GET", BASE + path.replace(/^\/rightree\//, ""), false);
+      x.responseType = "arraybuffer";
+      try { x.send(); status = x.status; } catch (e) { status = 0; }
+      if (status === 200) return new Uint8Array(x.response);
+    }
+    throw new Error(`Couldn't load ${path.replace(/^\/rightree\//, "")} ` +
+      `(${status ? "HTTP " + status : "network error"}). Check your connection and press Predict again.`);
   });
   py.runPython(`
 import contextlib, io, json, shutil, sys, traceback

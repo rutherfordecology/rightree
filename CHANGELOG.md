@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.22.1 (November 2026)
+
+- **Downloads are retried.** A prediction near Gisborne failed once with
+  "Couldn't load …/soil_calcium/7_4.bin", although the tile is published and
+  loads; one dropped request stopped the whole prediction. The worker now
+  tries each file and grid tile three times, and the message says whether it
+  was a network error or an HTTP status, and to press Predict again.
+
 ## v0.22.0 (November 2026)
 
 - **Northland.** Te Tai Tokerau is the third region: GBIF download
