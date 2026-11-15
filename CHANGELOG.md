@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.22.2 (November 2026)
+
+- **New address: rightree.rutherfordecology.co.nz.** `build_site.py` writes
+  the `CNAME` file GitHub Pages needs, so a rebuild keeps the address. The
+  old rutherfordecology.github.io/rightree/ address redirects to it.
+
 ## v0.22.1 (November 2026)
 
 - **Downloads are retried.** A prediction near Gisborne failed once with

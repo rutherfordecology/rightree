@@ -115,6 +115,8 @@ def main():
     (target / "files.json").write_text(json.dumps({"common": preload, "regions": per_region}), encoding="utf-8")
     (target / "README.md").write_text(SITE_README, encoding="utf-8")
     (target / ".nojekyll").write_text("", encoding="utf-8")     # GitHub Pages: serve files as they are
+    (target / "CNAME").write_text("rightree.rutherfordecology.co.nz
+", encoding="utf-8")  # GitHub Pages custom domain
 
     files = [p for p in target.rglob("*") if p.is_file() and ".git" not in p.parts]
     print(f"Built {target}: {len(files)} files, {sum(p.stat().st_size for p in files) / 1e6:.1f} MB, "
